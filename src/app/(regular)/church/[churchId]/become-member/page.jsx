@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/auth.jsx";
@@ -16,6 +16,7 @@ const BecomeMemberPage = () => {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const errorRef = useRef(null);
 
   useEffect(() => {
     fetchChurchInfo();
@@ -58,10 +59,20 @@ const BecomeMemberPage = () => {
       setSubmitted(true);
     } catch (error) {
       console.error("Error submitting application:", error);
-      setError(
-        error.response?.data?.message || 
-        "There was an error submitting your application. Please try again."
-      );
+      const errorMessage = error.response?.data?.message || 
+        "There was an error submitting your application. Please try again.";
+      
+      // Shorten the error message to only the main point
+      const shortErrorMessage = errorMessage.includes("You already have an approved membership") 
+        ? "You already have an approved membership. You can only be an active member of one church at a time."
+        : errorMessage;
+      
+      setError(shortErrorMessage);
+      
+      // Scroll to error message
+      setTimeout(() => {
+        errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
     } finally {
       setLoading(false);
     }
@@ -179,7 +190,7 @@ const BecomeMemberPage = () => {
           <div className="p-6 flex-1 flex flex-col">
             {/* Error Message */}
             {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div ref={errorRef} className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-700">{error}</p>
               </div>
             )}

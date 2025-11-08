@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Search, User, Mail, Phone, MapPin, Calendar, Users, Eye, Filter, Download, XCircle, UserX, MessageSquare, Edit } from "lucide-react";
+import { Search, User, Mail, Phone, MapPin, Calendar, Users, Eye, Filter, Download, XCircle, UserX, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/auth.jsx";
 import axios from "@/lib/axios";
 import DataLoading from "@/components/DataLoading";
@@ -695,21 +695,7 @@ const MemberDirectoryPage = () => {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex justify-end items-center gap-3 px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
-            {member.status === 'approved' && (
-              <Button
-                onClick={() => handleMarkAsAwayClick(member)}
-                variant="outline"
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200"
-                disabled={!canMarkAsAway || isUpdatingStatus}
-                title={!canMarkAsAway ? "You don't have permission to mark members as away" : ""}
-              >
-                <UserX className="h-4 w-4 mr-2" />
-                Mark as Away
-              </Button>
-            )}
-          </div>
+          {/* Footer intentionally left empty (removed Mark as Away action from modal) */}
         </div>
       </div>
     );
@@ -900,14 +886,14 @@ const MemberDirectoryPage = () => {
                                     View
                                   </Button>
                                   <Button
-                                    onClick={handleEditClick}
+                                    onClick={() => handleMarkAsAwayClick(member)}
                                     variant="outline"
-                                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border-gray-200 min-h-0 h-auto"
-                                    disabled={!canEdit}
-                                    title={!canEdit ? "You don't have permission to edit members" : ""}
+                                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 border-red-200 min-h-0 h-auto"
+                                    disabled={!canMarkAsAway}
+                                    title={!canMarkAsAway ? "You don't have permission to kick members" : ""}
                                   >
-                                    <Edit className="h-3 w-3 mr-1" />
-                                    Edit
+                                    <UserX className="h-3 w-3 mr-1" />
+                                    Kick
                                   </Button>
                                 </div>
                               </td>
