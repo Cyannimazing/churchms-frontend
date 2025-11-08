@@ -188,12 +188,26 @@ const RolePermissionPage = () => {
       return;
     }
     
-    // Open modal immediately with loading state
-    setOpen(true);
     setIsLoadingRoleData(true);
+    setErrors([]);
+    
+    // First try to use local data
+    const localRole = roles.find(r => r.RoleID === roleId);
+    if (localRole) {
+      setForm({
+        RoleName: localRole.RoleName,
+        permissions: localRole.permissions.map((p) => p.PermissionName),
+      });
+      setEditRoleId(roleId);
+      setOpen(true);
+      setIsLoadingRoleData(false);
+      return;
+    }
+    
+    // If not found locally, open modal and fetch from API
+    setOpen(true);
     setEditRoleId(roleId);
     setForm({ RoleName: "", permissions: [] });
-    setErrors([]);
     
     try {
       const role = await fetchRoleById(roleId, churchId, setErrors);

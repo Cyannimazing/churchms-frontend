@@ -95,6 +95,7 @@ const SacramentPage = () => {
   const [sacramentToDelete, setSacramentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoadingEdit, setIsLoadingEdit] = useState(false);
+  const [isLoadingServiceData, setIsLoadingServiceData] = useState(false);
   const itemsPerPage = 5;
   
   // Check if there's already a Mass service
@@ -189,6 +190,7 @@ const SacramentPage = () => {
     }
     
     setIsLoadingEdit(true);
+    setIsLoadingServiceData(true);
     setErrors([]);
     
     // First try to use local data
@@ -242,10 +244,12 @@ const SacramentPage = () => {
       setEditSacramentId(sacramentId);
       setOpen(true);
       setIsLoadingEdit(false);
+      setIsLoadingServiceData(false);
       return;
     }
     
-    // If not found locally, fetch from API
+    // If not found locally, open modal and fetch from API
+    setOpen(true);
     try {
       const sacrament = await fetchSacramentById(sacramentId, churchId, setErrors);
       
@@ -297,9 +301,11 @@ const SacramentPage = () => {
       setEditSacramentId(sacramentId);
       setOpen(true);
     } catch (err) {
+      setOpen(false);
       setErrors([err.message || "Failed to fetch sacrament details."]);
     } finally {
       setIsLoadingEdit(false);
+      setIsLoadingServiceData(false);
     }
   };
 
@@ -702,6 +708,24 @@ const SacramentPage = () => {
             >
               {editSacramentId ? "Edit Sacrament" : "Create Sacrament"}
             </h2>
+            {isLoadingServiceData ? (
+              <div className="space-y-6">
+                {/* Skeleton loading */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i}>
+                        <div className="h-4 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
+                        <div className="h-10 bg-gray-200 rounded w-full animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-6">
+                    <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Column - Main Fields */}
@@ -1404,6 +1428,7 @@ const SacramentPage = () => {
                 </Button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

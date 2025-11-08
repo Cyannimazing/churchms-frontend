@@ -385,9 +385,31 @@ const EmployeePage = () => {
   };
 
   const handleEdit = async (staffId) => {
-    // Open modal immediately with loading state
-    setOpen(true);
     setIsLoadingStaffData(true);
+    setErrors({});
+    
+    // First try to use local data
+    const localStaff = staffList.find(s => s.UserChurchRoleID === staffId);
+    if (localStaff) {
+      setForm({
+        email: localStaff.user.email,
+        password: "",
+        password_confirmation: "",
+        first_name: localStaff.user.profile.first_name,
+        last_name: localStaff.user.profile.last_name,
+        middle_name: localStaff.user.profile.middle_name || "",
+        contact_number: localStaff.user.contact?.contact_number || "",
+        address: localStaff.user.contact?.address || "",
+        role_id: localStaff.role?.RoleID || "",
+      });
+      setEditStaffId(staffId);
+      setOpen(true);
+      setIsLoadingStaffData(false);
+      return;
+    }
+    
+    // If not found locally, open modal and fetch from API
+    setOpen(true);
     setEditStaffId(staffId);
     setForm({
       email: "",
@@ -400,7 +422,6 @@ const EmployeePage = () => {
       address: "",
       role_id: "",
     });
-    setErrors({});
     
     try {
       const staff = await fetchStaffById(staffId, churchId, setPageErrors);
@@ -494,9 +515,28 @@ const EmployeePage = () => {
   };
 
   const handleClergyEdit = async (clergyId) => {
-    // Open modal immediately with loading state
-    setOpen(true);
     setIsLoadingClergyData(true);
+    setErrors({});
+    setModalAlertMessage("");
+    setModalAlertType("");
+    
+    // First try to use local data
+    const localClergy = clergyList.find(c => c.ClergyID === clergyId);
+    if (localClergy) {
+      setClergyForm({
+        first_name: localClergy.first_name,
+        last_name: localClergy.last_name,
+        middle_name: localClergy.middle_name || "",
+        position: localClergy.position
+      });
+      setEditClergyId(clergyId);
+      setOpen(true);
+      setIsLoadingClergyData(false);
+      return;
+    }
+    
+    // If not found locally, open modal and fetch from API
+    setOpen(true);
     setEditClergyId(clergyId);
     setClergyForm({
       first_name: "",
@@ -504,9 +544,6 @@ const EmployeePage = () => {
       middle_name: "",
       position: ""
     });
-    setErrors({});
-    setModalAlertMessage("");
-    setModalAlertType("");
     
     try {
       const response = await axios.get(`/api/clergy/${clergyId}`);
