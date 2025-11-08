@@ -218,7 +218,59 @@ const TransactionRecordPage = () => {
   const handleViewTransaction = async (transaction) => {
     // Open modal immediately
     setShowDetailsModal(true);
-    setSelectedTransaction(null); // Clear previous data to show loading
+    
+    // Try to use local data first
+    const localTransaction = transactions.find(t => t.ChurchTransactionID === transaction.ChurchTransactionID);
+    
+    if (localTransaction) {
+      // Prepare local data in the expected format for the modal
+      const formattedTransaction = {
+        id: localTransaction.ChurchTransactionID,
+        ChurchTransactionID: localTransaction.ChurchTransactionID,
+        receipt_code: localTransaction.receipt_code,
+        amount_paid: localTransaction.amount_paid,
+        transaction_date: localTransaction.transaction_date,
+        formatted_date: formatTime(localTransaction.transaction_date),
+        payment_method: localTransaction.payment_method,
+        payment_method_display: localTransaction.payment_method === 'card' ? 'Card' : 'GCash',
+        status: 'paid',
+        currency: 'PHP',
+        paymongo_session_id: localTransaction.paymongo_session_id,
+        refund_status: localTransaction.refund_status,
+        refund_date: localTransaction.refund_date,
+        metadata: localTransaction.metadata,
+        notes: localTransaction.notes,
+        service: {
+          name: localTransaction.appointment?.service?.ServiceName || 'N/A',
+          variant: localTransaction.appointment?.sub_sacrament_service?.SubServiceName || null
+        },
+        user: {
+          name: getUserDisplayName(localTransaction.user),
+          email: localTransaction.user?.email || 'N/A',
+          phone: localTransaction.user?.profile?.phone || null
+        },
+        church: localTransaction.church ? {
+          name: localTransaction.church.ChurchName || localTransaction.church.name,
+          address: localTransaction.church.Address || localTransaction.church.address
+        } : null,
+        appointment: localTransaction.appointment ? {
+          date: localTransaction.appointment.AppointmentDate ? 
+            new Date(localTransaction.appointment.AppointmentDate).toLocaleDateString('en-PH', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : null,
+          time: localTransaction.appointment.StartTime || null,
+          status: localTransaction.appointment.Status || null
+        } : null
+      };
+      
+      setSelectedTransaction(formattedTransaction);
+      return; // Stop here, no need to fetch from API
+    }
+    
+    // If not found locally, show loading and fetch from API
+    setSelectedTransaction(null);
     
     try {
       // Fetch detailed transaction data from API
