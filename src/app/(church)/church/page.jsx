@@ -57,6 +57,7 @@ const Dashboard = () => {
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, churchId: null, action: null });
   const [isConfirming, setIsConfirming] = useState(false);
   const [subscription, setSubscription] = useState(null);
+  const [redirecting, setRedirecting] = useState({});
 
   useEffect(() => {
     fetchChurches();
@@ -187,7 +188,8 @@ const Dashboard = () => {
     router.push(`/${formattedName}/sacrament`);
   };
 
-  const handleManage = (churchName) => {
+  const handleManage = (churchName, churchId) => {
+    setRedirecting((prev) => ({ ...prev, [churchId]: true }));
     const formattedName = churchName.replace(/\s+/g, "-").toLowerCase();
     router.push(`/${formattedName}/dashboard`);
   };
@@ -397,7 +399,7 @@ const Dashboard = () => {
                                   {({ active }) => (
                                     <button
                                       onClick={() =>
-                                        handleManage(church.ChurchName)
+                                        handleManage(church.ChurchName, church.ChurchID)
                                       }
                                       className={`${
                                         active
@@ -405,10 +407,17 @@ const Dashboard = () => {
                                           : "text-gray-700"
                                       } group flex items-center px-4 py-2 text-sm w-full text-left disabled:opacity-50 disabled:cursor-not-allowed`}
                                       disabled={
-                                        church.ChurchStatus !== "Active"
+                                        church.ChurchStatus !== "Active" || redirecting[church.ChurchID]
                                       }
                                     >
-                                      <Eye className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                                      {redirecting[church.ChurchID] ? (
+                                        <svg className="animate-spin mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                        </svg>
+                                      ) : (
+                                        <Eye className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                                      )}
                                       View Dashboard
                                     </button>
                                   )}
@@ -543,12 +552,20 @@ const Dashboard = () => {
                         {church.ChurchStatus === "Active" && (
                           <>
                             <Button
-                              onClick={() => handleManage(church.ChurchName)}
+                              onClick={() => handleManage(church.ChurchName, church.ChurchID)}
                               variant="primary"
                               className="text-xs"
+                              disabled={redirecting[church.ChurchID]}
                             >
-                              <Eye className="h-3 w-3 mr-1" />
-                              Dashboard
+                              {redirecting[church.ChurchID] ? (
+                                <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                              ) : (
+                                <Eye className="h-3 w-3 mr-1" />
+                              )}
+                              {redirecting[church.ChurchID] ? "Redirecting..." : "Dashboard"}
                             </Button>
 
                             <Button
