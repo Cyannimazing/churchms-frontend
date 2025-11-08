@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [documents, setDocuments] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [reviewedChurches, setReviewedChurches] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,6 +85,11 @@ const Dashboard = () => {
 
   // Fetch documents for a specific church when the eye icon is clicked
   const fetchDocuments = async (churchId) => {
+    setIsModalOpen(true);
+    setIsLoadingDocuments(true);
+    setSelectedChurch(null);
+    setDocuments([]);
+    
     try {
       const response = await axios.get(`/api/churches/${churchId}/documents`);
       setSelectedChurch(response.data.church);
@@ -94,7 +100,6 @@ const Dashboard = () => {
         console.log("Reviewed Churches:", Array.from(updated));
         return updated;
       });
-      setIsModalOpen(true);
     } catch (error) {
       const errorData = error.response?.data || {};
       const errorMessage = errorData.message
@@ -106,6 +111,9 @@ const Dashboard = () => {
         status: error.response?.status,
         data: errorData,
       });
+      setIsModalOpen(false);
+    } finally {
+      setIsLoadingDocuments(false);
     }
   };
 
@@ -334,13 +342,59 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {isModalOpen && selectedChurch && (
+      {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-lg">
-            {/* Modal Header */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              {selectedChurch.ChurchName}
-            </h2>
+            {isLoadingDocuments ? (
+              /* Skeleton Loading State */
+              <>
+                {/* Modal Header Skeleton */}
+                <div className="h-8 bg-gray-200 rounded-md w-2/3 mb-4 animate-pulse"></div>
+
+                {/* Current Status Section Skeleton */}
+                <div className="mb-6">
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded-full w-20 animate-pulse"></div>
+                </div>
+
+                {/* Documents Section Skeleton */}
+                <div className="mb-6">
+                  <div className="h-4 bg-gray-200 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="space-y-3 border border-gray-200 rounded-lg p-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-200 rounded w-32 mb-1 animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 rounded w-20 animate-pulse"></div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="h-7 w-7 bg-gray-200 rounded animate-pulse"></div>
+                          <div className="h-7 w-7 bg-gray-200 rounded animate-pulse"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Update Status Section Skeleton */}
+                <div className="mb-6">
+                  <div className="h-4 bg-gray-200 rounded w-40 mb-3 animate-pulse"></div>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-1 h-10 bg-gray-200 rounded-md animate-pulse"></div>
+                    <div className="flex-1 h-10 bg-gray-200 rounded-md animate-pulse"></div>
+                  </div>
+                </div>
+
+                {/* Close Button Skeleton */}
+                <div className="h-10 bg-gray-200 rounded-md w-full animate-pulse"></div>
+              </>
+            ) : selectedChurch ? (
+              /* Actual Content */
+              <>
+                {/* Modal Header */}
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  {selectedChurch.ChurchName}
+                </h2>
 
             {/* Current Status Section */}
             <div className="mb-6">
@@ -455,14 +509,16 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Close Button */}
-            <Button
-              onClick={() => setIsModalOpen(false)}
-              variant="outline"
-              className="w-full px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm font-medium"
-            >
-              Close
-            </Button>
+                {/* Close Button */}
+                <Button
+                  onClick={() => setIsModalOpen(false)}
+                  variant="outline"
+                  className="w-full px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm font-medium"
+                >
+                  Close
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
       )}
