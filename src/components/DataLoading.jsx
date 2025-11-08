@@ -2,7 +2,7 @@ import React from "react";
 
 const DataLoading = ({ message }) => {
   return (
-    <div className="flex justify-center items-center h-96">
+    <div className="flex justify-center items-center h-full min-h-96">
       <div className="flex justify-center items-center">
         <svg
           className="animate-spin h-5 w-5 mr-3 text-blue-500"
