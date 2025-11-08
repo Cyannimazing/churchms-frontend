@@ -216,13 +216,17 @@ const TransactionRecordPage = () => {
   };
 
   const handleViewTransaction = async (transaction) => {
+    // Open modal immediately
+    setShowDetailsModal(true);
+    setSelectedTransaction(null); // Clear previous data to show loading
+    
     try {
       // Fetch detailed transaction data from API
       const response = await axios.get(`/api/appointment-transactions/${transaction.ChurchTransactionID}`);
       if (response.data.success) {
         setSelectedTransaction(response.data.data);
-        setShowDetailsModal(true);
       } else {
+        setShowDetailsModal(false);
         setAlert({
           show: true,
           type: 'error',
@@ -232,6 +236,7 @@ const TransactionRecordPage = () => {
       }
     } catch (err) {
       console.error('Error fetching transaction details:', err);
+      setShowDetailsModal(false);
       setAlert({
         show: true,
         type: 'error',
@@ -830,7 +835,7 @@ const TransactionRecordPage = () => {
       </div>
 
       {/* Transaction Details Modal */}
-      {showDetailsModal && selectedTransaction && (
+      {showDetailsModal && (
         <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
@@ -844,6 +849,30 @@ const TransactionRecordPage = () => {
               </button>
             </div>
             
+            {!selectedTransaction ? (
+              <div className="px-6 py-4 space-y-6">
+                {/* Skeleton Loading */}
+                {[1, 2, 3, 4].map((section) => (
+                  <div key={section}>
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-3 animate-pulse"></div>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between">
+                        <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
             <div className="px-6 py-4 space-y-6">
               {/* Transaction Information */}
               <div>
@@ -1081,6 +1110,7 @@ const TransactionRecordPage = () => {
                 </div>
               )}
             </div>
+            )}
 
             {/* Footer */}
             <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end">
