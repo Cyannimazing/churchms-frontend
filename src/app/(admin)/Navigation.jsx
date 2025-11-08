@@ -6,6 +6,22 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/auth.jsx";
 import { Menu, X, Church } from "lucide-react";
 import ApplicationLogo from "@/components/ApplicationLogo.jsx";
+import axios from "@/lib/axios";
+import { getEcho } from "@/lib/echo";
+
+// Lightweight sound player for new notifications (sidebar only)
+let __navNotifAudio;
+const playNavNotificationSound = () => {
+  try {
+    if (!__navNotifAudio) {
+      __navNotifAudio = new Audio('/notification-sound.mp3');
+      __navNotifAudio.preload = 'auto';
+    }
+    __navNotifAudio.currentTime = 0;
+    const p = __navNotifAudio.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  } catch (_) {}
+};
 
 const Navigation = ({ user }) => {
   const pathname = usePathname();
@@ -14,6 +30,62 @@ const Navigation = ({ user }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread count + realtime + fallbacks
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await axios.get('/api/notifications/unread-count');
+        setUnreadCount(response.data.count || 0);
+      } catch (error) {
+        console.error('Error fetching unread count:', error);
+      }
+    };
+
+    if (!user) return;
+
+    // Initial fetch
+    fetchUnreadCount();
+
+    // WebSocket realtime updates
+    const echo = getEcho();
+    let userChannel;
+    if (echo) {
+      userChannel = echo.private(`user.${user.id}`);
+      const refresh = () => fetchUnreadCount();
+      userChannel.listen('.notification.created', () => {
+        refresh();
+        try { if (!pathname.endsWith('/admin-notifications')) playNavNotificationSound(); } catch (_) {}
+      });
+      userChannel.listen('.notification.read', refresh);
+      userChannel.listen('.notification.read_all', refresh);
+      userChannel.listen('.notification.deleted', refresh);
+    }
+
+    // Polling fallback every 10s (covers missed events / reconnections)
+    const intervalId = setInterval(fetchUnreadCount, 10000);
+
+    // Update on tab focus/visibility
+    const handleVisibility = () => { if (document.visibilityState === 'visible') fetchUnreadCount(); };
+    const handleFocus = () => fetchUnreadCount();
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+      try {
+        if (userChannel) {
+          userChannel.stopListening('.notification.created');
+          userChannel.stopListening('.notification.read');
+          userChannel.stopListening('.notification.read_all');
+          userChannel.stopListening('.notification.deleted');
+        }
+      } catch (_) {}
+    };
+  }, [user, pathname]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -73,6 +145,12 @@ const Navigation = ({ user }) => {
           href: "/transactions",
           icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
           badge: null,
+        },
+        {
+          name: "Notifications",
+          href: "/admin-notifications",
+          icon: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
+          badge: "dynamic",
         },
       ],
     },
@@ -332,23 +410,25 @@ const Navigation = ({ user }) => {
                                 : "text-gray-700 hover:bg-gray-50 hover:text-slate-900"
                             }`}
                           >
-                            <svg
-                              className="w-5 h-5 mr-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d={item.icon}
-                              />
-                            </svg>
-                            <span className="font-medium">{item.name}</span>
-                            {item.badge && (
-                              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-800">
-                                {item.badge}
+                            <div className="flex items-center">
+                              <svg
+                                className="w-5 h-5 mr-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d={item.icon}
+                                />
+                              </svg>
+                              <span className="font-medium">{item.name}</span>
+                            </div>
+                            {item.badge === "dynamic" && unreadCount > 0 && pathname !== item.href && (
+                              <span className="ml-auto px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                {unreadCount}
                               </span>
                             )}
                           </Link>
