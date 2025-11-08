@@ -563,11 +563,35 @@ const AppointmentPage = () => {
   const handleViewAppointment = async (appointment) => {
     setSelectedAppointment(appointment);
     setShowReviewModal(true);
-    setIsLoadingDetails(true);
     
     // Reset form data for new appointment
     setStaffFormData({});
     
+    // Try to find the appointment in local state first
+    const localAppointment = appointments.find(apt => apt.AppointmentID === appointment.AppointmentID);
+    
+    if (localAppointment && localAppointment.formConfiguration) {
+      // We have enough data locally, use it immediately
+      setAppointmentDetails(localAppointment);
+      
+      // Initialize form data with saved answers if available
+      if (localAppointment.formConfiguration?.form_elements) {
+        const initialFormData = {};
+        localAppointment.formConfiguration.form_elements.forEach(element => {
+          if (element.answer && element.answer.trim() !== '') {
+            initialFormData[element.id] = element.answer;
+          }
+        });
+        console.log('Initializing form data with saved answers from local data:', initialFormData);
+        setStaffFormData(initialFormData);
+      }
+      
+      setIsLoadingDetails(false);
+      return; // No need to fetch from API
+    }
+    
+    // If not enough data locally, show skeleton and fetch from API
+    setIsLoadingDetails(true);
     
     try {
       // Fetch detailed appointment information
