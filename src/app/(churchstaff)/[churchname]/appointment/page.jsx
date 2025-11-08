@@ -395,6 +395,27 @@ const AppointmentPage = () => {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  // Helper function to construct user display name
+  const getUserDisplayName = (appointment) => {
+    // Try to use UserName if it exists and is not empty
+    if (appointment.UserName && appointment.UserName.trim()) {
+      return appointment.UserName;
+    }
+    
+    // Otherwise, construct from individual fields
+    const firstName = appointment.first_name || '';
+    const middleName = appointment.middle_name ? `${appointment.middle_name}. ` : '';
+    const lastName = appointment.last_name || '';
+    const fullName = `${firstName} ${middleName}${lastName}`.trim();
+    
+    // If we have a name, return it; otherwise use email or fallback
+    if (fullName) {
+      return fullName;
+    }
+    
+    return appointment.UserEmail || 'Unknown User';
+  };
+
   // Function to check if all required submissions are complete
   const checkAllRequiredSubmissionsComplete = (formConfiguration) => {
     if (!formConfiguration) return true; // No form config means no requirements
@@ -1232,7 +1253,7 @@ const AppointmentPage = () => {
                                   </div>
                                   <div className="ml-4">
                                     <div className="text-sm font-medium text-gray-900">
-                                      {appointment.UserName || 'Unknown User'}
+                                      {getUserDisplayName(appointment)}
                                     </div>
                                     <div className="text-sm text-gray-500">
                                       {appointment.UserEmail || 'No email'}
@@ -1370,7 +1391,7 @@ const AppointmentPage = () => {
                     Review Appointment
                   </h2>
                   <p className="text-gray-600 text-sm mt-1">
-                    {selectedAppointment?.ServiceName} - {selectedAppointment?.UserName}
+                    {selectedAppointment?.ServiceName} - {getUserDisplayName(selectedAppointment)}
                   </p>
                 </div>
               </div>
@@ -1491,7 +1512,7 @@ const AppointmentPage = () => {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-gray-700 mb-2">Applicant</p>
-                            <p className="text-gray-900">{selectedAppointment?.UserName || 'Unknown User'}</p>
+                            <p className="text-gray-900">{getUserDisplayName(selectedAppointment)}</p>
                             <p className="text-sm text-gray-600">{selectedAppointment?.UserEmail || 'No email provided'}</p>
                           </div>
                         </div>
