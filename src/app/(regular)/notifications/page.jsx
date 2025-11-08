@@ -5,7 +5,6 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { Bell, Check, CheckCheck, Trash2, Calendar, CheckCircle2, XCircle, Info, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import DataLoading from "@/components/DataLoading";
 
 export default function NotificationsPage() {
   const { user } = useAuth({ middleware: "auth" });
@@ -155,7 +154,10 @@ export default function NotificationsPage() {
           {/* Notifications List */}
           <div className="p-6 flex-1 overflow-y-auto">
             {loading ? (
-              <DataLoading message="Loading notifications..." />
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">Loading notifications...</span>
+              </div>
             ) : filteredNotifications.length === 0 ? (
               <div className="text-center py-12">
                 <Bell size={64} className="w-16 h-16 text-gray-400 mx-auto mb-4" />
