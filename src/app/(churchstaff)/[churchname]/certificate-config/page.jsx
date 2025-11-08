@@ -487,7 +487,7 @@ const CertificateConfig = () => {
                                   <option value="">Select a field</option>
                                   {Array.isArray(serviceInputFields) && serviceInputFields.map((inputField) => (
                                     <option key={inputField.InputFieldID} value={`${inputField.InputFieldID}-${inputField.elementId || inputField.element_id}`}>
-                                      {inputField.label} ({inputField.InputFieldID} - {inputField.elementId || inputField.element_id || 'No Element ID'})
+                                      ({inputField.InputFieldID} - {inputField.elementId || inputField.element_id || 'No Element ID'})
                                     </option>
                                   ))}
                                 </select>
@@ -556,7 +556,7 @@ const CertificateConfig = () => {
                                   <option value="">Select a field</option>
                                   {Array.isArray(serviceInputFields) && serviceInputFields.map((inputField) => (
                                     <option key={inputField.InputFieldID} value={`${inputField.InputFieldID}-${inputField.elementId || inputField.element_id}`}>
-                                      {inputField.label} ({inputField.InputFieldID} - {inputField.elementId || inputField.element_id || 'No Element ID'})
+                                      ({inputField.InputFieldID} - {inputField.elementId || inputField.element_id || 'No Element ID'})
                                     </option>
                                   ))}
                                 </select>
@@ -625,7 +625,7 @@ const CertificateConfig = () => {
                                   <option value="">Select a field</option>
                                   {Array.isArray(serviceInputFields) && serviceInputFields.map((inputField) => (
                                     <option key={inputField.InputFieldID} value={`${inputField.InputFieldID}-${inputField.elementId || inputField.element_id}`}>
-                                      {inputField.label} ({inputField.InputFieldID} - {inputField.elementId || inputField.element_id || 'No Element ID'})
+                                      ({inputField.InputFieldID} - {inputField.elementId || inputField.element_id || 'No Element ID'})
                                     </option>
                                   ))}
                                 </select>
