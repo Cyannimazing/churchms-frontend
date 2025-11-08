@@ -226,8 +226,9 @@ export default function NotificationsPage() {
                           </div>
                         </div>
 
-                        {/* Sub-services information */}
-                        {notification.data?.sub_services && notification.data.sub_services.length > 0 && (
+                        {/* Sub-services information - Only show for approved appointments */}
+                        {notification.data?.sub_services && notification.data.sub_services.length > 0 && 
+                         (notification.message?.toLowerCase().includes('approved') || notification.type === 'appointment_status_changed' && notification.data?.status?.toLowerCase() === 'approved') && (
                           <div className="mt-3 p-4 bg-purple-50 rounded-lg border border-purple-200">
                             <h4 className="text-sm font-semibold text-purple-900 mb-2">Required:</h4>
                             <div className="space-y-3">
