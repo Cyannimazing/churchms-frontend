@@ -91,6 +91,7 @@ const RolePermissionPage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingRoleData, setIsLoadingRoleData] = useState(false);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -186,17 +187,25 @@ const RolePermissionPage = () => {
       setErrors(["Church ID not available. Please try again."]);
       return;
     }
+    
+    // Open modal immediately with loading state
+    setOpen(true);
+    setIsLoadingRoleData(true);
+    setEditRoleId(roleId);
+    setForm({ RoleName: "", permissions: [] });
+    setErrors([]);
+    
     try {
       const role = await fetchRoleById(roleId, churchId, setErrors);
       setForm({
         RoleName: role.RoleName,
         permissions: role.permissions.map((p) => p.PermissionName),
       });
-      setEditRoleId(roleId);
-      setErrors([]);
-      setOpen(true);
     } catch (err) {
       setErrors([err.message || "Failed to fetch role details."]);
+      setOpen(false);
+    } finally {
+      setIsLoadingRoleData(false);
     }
   };
 
@@ -535,6 +544,23 @@ const RolePermissionPage = () => {
             >
               {editRoleId ? "Edit Role" : "Create Role"}
             </h2>
+            {isLoadingRoleData ? (
+              <div className="space-y-6">
+                {/* Skeleton loading */}
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-10 bg-gray-200 rounded w-full animate-pulse"></div>
+                </div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="h-24 bg-gray-200 rounded animate-pulse"></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label
@@ -660,6 +686,7 @@ const RolePermissionPage = () => {
                 </Button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

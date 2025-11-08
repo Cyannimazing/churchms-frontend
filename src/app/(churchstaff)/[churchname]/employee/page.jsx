@@ -255,6 +255,8 @@ const EmployeePage = () => {
   // Staff confirm dialog state
   const [staffConfirmDialog, setStaffConfirmDialog] = useState({ open: false, staffId: null, currentStatus: null });
   const [staffConfirmLoading, setStaffConfirmLoading] = useState(false);
+  const [isLoadingStaffData, setIsLoadingStaffData] = useState(false);
+  const [isLoadingClergyData, setIsLoadingClergyData] = useState(false);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -383,6 +385,23 @@ const EmployeePage = () => {
   };
 
   const handleEdit = async (staffId) => {
+    // Open modal immediately with loading state
+    setOpen(true);
+    setIsLoadingStaffData(true);
+    setEditStaffId(staffId);
+    setForm({
+      email: "",
+      password: "",
+      password_confirmation: "",
+      first_name: "",
+      last_name: "",
+      middle_name: "",
+      contact_number: "",
+      address: "",
+      role_id: "",
+    });
+    setErrors({});
+    
     try {
       const staff = await fetchStaffById(staffId, churchId, setPageErrors);
       setForm({
@@ -396,12 +415,12 @@ const EmployeePage = () => {
         address: staff.user.contact?.address || "",
         role_id: staff.role?.RoleID || "",
       });
-      setEditStaffId(staffId);
-      setErrors({});
-      setOpen(true);
     } catch (err) {
+      setOpen(false);
       setAlertMessage(err.message || "Failed to fetch staff details.");
       setAlertType("error");
+    } finally {
+      setIsLoadingStaffData(false);
     }
   };
 
@@ -475,6 +494,20 @@ const EmployeePage = () => {
   };
 
   const handleClergyEdit = async (clergyId) => {
+    // Open modal immediately with loading state
+    setOpen(true);
+    setIsLoadingClergyData(true);
+    setEditClergyId(clergyId);
+    setClergyForm({
+      first_name: "",
+      last_name: "",
+      middle_name: "",
+      position: ""
+    });
+    setErrors({});
+    setModalAlertMessage("");
+    setModalAlertType("");
+    
     try {
       const response = await axios.get(`/api/clergy/${clergyId}`);
       const clergy = response.data;
@@ -484,14 +517,12 @@ const EmployeePage = () => {
         middle_name: clergy.middle_name || "",
         position: clergy.position
       });
-      setEditClergyId(clergyId);
-      setErrors({});
-      setModalAlertMessage("");
-      setModalAlertType("");
-      setOpen(true);
     } catch (err) {
+      setOpen(false);
       setAlertMessage("Failed to fetch clergy details.");
       setAlertType("error");
+    } finally {
+      setIsLoadingClergyData(false);
     }
   };
 
@@ -1002,6 +1033,17 @@ const EmployeePage = () => {
                   />
                 </div>
               )}
+              {(isLoadingStaffData || isLoadingClergyData) ? (
+                <div className="space-y-6">
+                  {/* Skeleton loading */}
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i}>
+                      <div className="h-4 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
+                      <div className="h-10 bg-gray-200 rounded w-full animate-pulse"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
               <form className="space-y-6">
                 {activeTab === "staff" && (
                   <>
@@ -1371,6 +1413,7 @@ const EmployeePage = () => {
                   </>
                 )}
               </form>
+              )}
             </div>
 
             {/* Footer */}
