@@ -929,9 +929,9 @@ const MemberDirectoryPage = () => {
           setMemberToMarkAway(null);
         }}
         onConfirm={handleMarkAsAway}
-        title="Mark Member as Away"
-        message={`Are you sure you want to mark ${memberToMarkAway?.first_name} ${memberToMarkAway?.last_name} as "Away"? This will allow them to register at another church.`}
-        confirmText="Yes, Mark as Away"
+        title="Kick Member"
+        message={`Are you sure you want to kick ${memberToMarkAway?.first_name} ${memberToMarkAway?.last_name}? This will allow them to register at another church.`}
+        confirmText="Yes, Kick Member"
         cancelText="Cancel"
         type="warning"
         isLoading={isUpdatingStatus}
