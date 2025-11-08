@@ -460,7 +460,7 @@ const AppointmentPage = () => {
     // Check if all sub-services are marked as completed
     if (formConfiguration.sub_services && formConfiguration.sub_services.length > 0) {
       for (const subService of formConfiguration.sub_services) {
-        if (!subService.is_completed) {
+        if (!subService.isCompleted) {
           return false; // Found a sub-service that is not completed
         }
       }
@@ -492,7 +492,7 @@ const AppointmentPage = () => {
     } else if (type === 'sub_service_completion') {
       // Update sub-service completion status
       updatedFormConfig.sub_services = updatedFormConfig.sub_services?.map(subService => 
-        subService.id === itemId ? { ...subService, is_completed: isSubmitted } : subService
+        subService.id === itemId ? { ...subService, isCompleted: isSubmitted } : subService
       );
     }
     
