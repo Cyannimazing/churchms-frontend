@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/auth.jsx";
 import axios from "@/lib/axios";
 import dynamic from "next/dynamic";
+import DataLoading from "@/components/DataLoading";
 import {
   DollarSign,
   Calendar,
@@ -76,49 +77,6 @@ const Dashboard = () => {
     }
   }, [user, churchname]);
 
-  if (loading) {
-    return (
-      <div className="lg:p-6 w-full min-h-screen pt-20">
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!analytics) {
-    return (
-      <div className="lg:p-6 w-full min-h-screen pt-20">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-600">Unable to load analytics data.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const { financial, appointments, members, recent_transactions } = analytics;
-
-  // Prepare data for charts
-  const appointmentStatusData = Object.keys(appointments.by_status || {}).map((key) => ({
-    name: key,
-    value: appointments.by_status[key],
-  }));
-
-  const memberStatusData = Object.keys(members.by_status || {}).map((key) => ({
-    name: key.charAt(0).toUpperCase() + key.slice(1),
-    value: members.by_status[key],
-  }));
-
-  const statusColors = {
-    Pending: COLORS.warning,
-    Confirmed: COLORS.success,
-    Completed: COLORS.info,
-    Cancelled: COLORS.danger,
-    pending: COLORS.warning,
-    approved: COLORS.success,
-    rejected: COLORS.danger,
-  };
-
   return (
     <div className="lg:p-6 w-full min-h-screen pt-20">
       <div className="w-full">
@@ -128,6 +86,38 @@ const Dashboard = () => {
             <p className="text-gray-600 mt-1">Overview of your church management metrics</p>
           </div>
           <div className="p-6">
+            {loading ? (
+              <DataLoading message="Loading analytics data..." />
+            ) : !analytics ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Unable to load analytics data.</p>
+              </div>
+            ) : (() => {
+              const { financial, appointments, members, recent_transactions } = analytics;
+
+              // Prepare data for charts
+              const appointmentStatusData = Object.keys(appointments.by_status || {}).map((key) => ({
+                name: key,
+                value: appointments.by_status[key],
+              }));
+
+              const memberStatusData = Object.keys(members.by_status || {}).map((key) => ({
+                name: key.charAt(0).toUpperCase() + key.slice(1),
+                value: members.by_status[key],
+              }));
+
+              const statusColors = {
+                Pending: COLORS.warning,
+                Confirmed: COLORS.success,
+                Completed: COLORS.info,
+                Cancelled: COLORS.danger,
+                pending: COLORS.warning,
+                approved: COLORS.success,
+                rejected: COLORS.danger,
+              };
+
+              return (
+              <>
             {/* Financial Overview */}
             <div className="mb-8">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Financial Overview</h2>
@@ -326,6 +316,9 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+              </>
+              );
+            })()}
           </div>
         </div>
       </div>

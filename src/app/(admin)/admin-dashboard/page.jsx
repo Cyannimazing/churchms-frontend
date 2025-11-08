@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/auth.jsx";
 import axios from "@/lib/axios";
 import dynamic from "next/dynamic";
+import DataLoading from "@/components/DataLoading";
 import {
   DollarSign,
   TrendingUp,
@@ -67,51 +68,6 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  if (loading) {
-    return (
-      <div className="lg:p-6 w-full min-h-screen pt-20">
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!analytics) {
-    return (
-      <div className="lg:p-6 w-full min-h-screen pt-20">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-600">Unable to load analytics data.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const { earnings, churches, subscriptions, payment_methods, recent_transactions, recent_applications } = analytics;
-
-  // Prepare data for charts
-  const churchStatusData = Object.keys(churches.by_status || {}).map((key) => ({
-    name: key.charAt(0).toUpperCase() + key.slice(1),
-    value: churches.by_status[key],
-  }));
-
-  const subscriptionStatusData = Object.keys(subscriptions.by_status || {}).map((key) => ({
-    name: key.charAt(0).toUpperCase() + key.slice(1),
-    value: subscriptions.by_status[key],
-  }));
-
-  const statusColors = {
-    Pending: COLORS.warning,
-    Active: COLORS.success,
-    Rejected: COLORS.danger,
-    Approved: COLORS.success,
-    Expired: COLORS.danger,
-    pending: COLORS.warning,
-    active: COLORS.success,
-    rejected: COLORS.danger,
-    approved: COLORS.success,
-    expired: COLORS.danger,
-  };
 
   return (
     <div className="lg:p-6 w-full min-h-screen pt-20">
@@ -122,6 +78,41 @@ const Dashboard = () => {
             <p className="text-gray-600 mt-1">Platform-wide subscription earnings and church management overview</p>
           </div>
           <div className="p-6">
+            {loading ? (
+              <DataLoading message="Loading analytics data..." />
+            ) : !analytics ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">Unable to load analytics data.</p>
+              </div>
+            ) : (() => {
+              const { earnings, churches, subscriptions, payment_methods, recent_transactions, recent_applications } = analytics;
+
+              // Prepare data for charts
+              const churchStatusData = Object.keys(churches.by_status || {}).map((key) => ({
+                name: key.charAt(0).toUpperCase() + key.slice(1),
+                value: churches.by_status[key],
+              }));
+
+              const subscriptionStatusData = Object.keys(subscriptions.by_status || {}).map((key) => ({
+                name: key.charAt(0).toUpperCase() + key.slice(1),
+                value: subscriptions.by_status[key],
+              }));
+
+              const statusColors = {
+                Pending: COLORS.warning,
+                Active: COLORS.success,
+                Rejected: COLORS.danger,
+                Approved: COLORS.success,
+                Expired: COLORS.danger,
+                pending: COLORS.warning,
+                active: COLORS.success,
+                rejected: COLORS.danger,
+                approved: COLORS.success,
+                expired: COLORS.danger,
+              };
+
+              return (
+              <>
             {/* SUBSCRIPTION EARNINGS OVERVIEW */}
             <div className="mb-8">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Subscription Earnings</h2>
@@ -466,6 +457,9 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+              </>
+              );
+            })()}
           </div>
         </div>
       </div>
