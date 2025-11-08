@@ -129,6 +129,9 @@ const AppointmentPage = () => {
   // Approval state
   const [canApproveAppointment, setCanApproveAppointment] = useState(true);
   
+  // Sub-service completion state
+  const [allSubServicesCompleted, setAllSubServicesCompleted] = useState(true);
+  
   // Auto-complete state
   const [showAutoCompleteModal, setShowAutoCompleteModal] = useState(false);
   const [autoCompleteService, setAutoCompleteService] = useState('All');
@@ -225,8 +228,13 @@ const AppointmentPage = () => {
     if (appointmentDetails?.formConfiguration) {
       const canApprove = checkAllRequiredSubmissionsComplete(appointmentDetails.formConfiguration);
       setCanApproveAppointment(canApprove);
+      
+      // Check if all sub-services are completed
+      const allCompleted = checkAllSubServicesCompleted(appointmentDetails.formConfiguration);
+      setAllSubServicesCompleted(allCompleted);
     } else {
       setCanApproveAppointment(true); // No requirements means can approve
+      setAllSubServicesCompleted(true); // No sub-services means all completed
     }
   }, [appointmentDetails]);
 
@@ -444,6 +452,22 @@ const AppointmentPage = () => {
     
     return true; // All required submissions are complete
   };
+  
+  // Function to check if all sub-services are completed
+  const checkAllSubServicesCompleted = (formConfiguration) => {
+    if (!formConfiguration) return true; // No form config means no sub-services
+    
+    // Check if all sub-services are marked as completed
+    if (formConfiguration.sub_services && formConfiguration.sub_services.length > 0) {
+      for (const subService of formConfiguration.sub_services) {
+        if (!subService.is_completed) {
+          return false; // Found a sub-service that is not completed
+        }
+      }
+    }
+    
+    return true; // All sub-services are completed (or there are none)
+  };
 
   // Handle submission status changes from FormRenderer
   const handleSubmissionStatusChange = (itemId, isSubmitted, type) => {
@@ -465,6 +489,11 @@ const AppointmentPage = () => {
           req.id === itemId ? { ...req, isSubmitted } : req
         )
       }));
+    } else if (type === 'sub_service_completion') {
+      // Update sub-service completion status
+      updatedFormConfig.sub_services = updatedFormConfig.sub_services?.map(subService => 
+        subService.id === itemId ? { ...subService, is_completed: isSubmitted } : subService
+      );
     }
     
     // Update appointment details with new form configuration
@@ -1646,8 +1675,11 @@ const AppointmentPage = () => {
                       <Button
                         onClick={() => showStatusConfirmDialog(selectedAppointment.AppointmentID, 'Completed')}
                         className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isUpdatingStatus || !canMarkCompleted}
-                        title={!canMarkCompleted ? 'You do not have permission to mark appointments as completed' : ''}
+                        disabled={isUpdatingStatus || !canMarkCompleted || !allSubServicesCompleted}
+                        title={
+                          !canMarkCompleted ? 'You do not have permission to mark appointments as completed' :
+                          !allSubServicesCompleted ? 'All sub-services must be completed before marking appointment as completed' : ''
+                        }
                       >
                         <Check className="h-4 w-4 mr-2" />
                         {isUpdatingStatus ? 'Updating...' : 'Mark as Completed'}
