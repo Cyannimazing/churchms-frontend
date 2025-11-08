@@ -1999,8 +1999,9 @@ const AppointmentPage = () => {
                           apt.Status === 'Approved'
                         )
                         .map(apt => {
-                          const date = new Date(apt.AppointmentDate);
-                          return date.toISOString().split('T')[0];
+                          // Extract date directly from datetime string to avoid timezone issues
+                          const dateStr = apt.AppointmentDate.split(' ')[0]; // Gets 'YYYY-MM-DD' part
+                          return dateStr;
                         })
                     )].sort((a, b) => new Date(a) - new Date(b));
                     
@@ -2040,8 +2041,8 @@ const AppointmentPage = () => {
                     if (!activeService) return null;
                     
                     const filteredAppointments = appointments.filter(apt => {
-                      const date = new Date(apt.AppointmentDate);
-                      const aptDate = date.toISOString().split('T')[0];
+                      // Extract date directly from datetime string to avoid timezone issues
+                      const aptDate = apt.AppointmentDate.split(' ')[0]; // Gets 'YYYY-MM-DD' part
                       return apt.ServiceID === activeService.ServiceID && 
                              apt.Status === 'Approved' &&
                              aptDate === reportDate;
