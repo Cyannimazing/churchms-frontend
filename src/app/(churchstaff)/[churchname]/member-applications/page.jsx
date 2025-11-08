@@ -584,6 +584,7 @@ const MemberApplicationsContent = () => {
             </div>
               </>
             )}
+            </div>
           </div>
 
           {/* Footer */}
