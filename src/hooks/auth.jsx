@@ -107,7 +107,7 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
     setErrors([]);
     setStatus(null);
 
-    axios
+    return axios
       .post("/api/forgot-password", { email })
       .then((response) => setStatus(response.data.status))
       .catch((error) => {
@@ -134,7 +134,7 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
   };
 
   const resendEmailVerification = ({ setStatus }) => {
-    axios
+    return axios
       .post("/api/email/verification-notification")
       .then((response) => setStatus(response.data.status));
   };

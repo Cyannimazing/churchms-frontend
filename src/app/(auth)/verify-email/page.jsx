@@ -2,7 +2,7 @@
 
 import Button from "@/components/Button";
 import { useAuth } from "@/hooks/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AuthCard from "../AuthCard";
 import { Loader2 } from "lucide-react";
 
@@ -14,6 +14,13 @@ const Page = () => {
 
   const [status, setStatus] = useState(null);
   const [isResending, setIsResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((c) => c - 1), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
 
   return (
     <AuthCard>
@@ -36,11 +43,12 @@ const Page = () => {
             setIsResending(true);
             try {
               await resendEmailVerification({ setStatus });
+              setCooldown(30);
             } finally {
               setIsResending(false);
             }
           }}
-          disabled={isResending}
+          disabled={isResending || cooldown > 0}
         >
           {isResending ? (
             <>
@@ -48,7 +56,7 @@ const Page = () => {
               Sending...
             </>
           ) : (
-            "Resend Verification Email"
+            cooldown > 0 ? `Resend in ${cooldown}s` : "Resend Verification Email"
           )}
         </Button>
 
