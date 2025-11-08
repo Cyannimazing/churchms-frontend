@@ -4,6 +4,7 @@ import Button from "@/components/Button";
 import { useAuth } from "@/hooks/auth";
 import { useState } from "react";
 import AuthCard from "../AuthCard";
+import { Loader2 } from "lucide-react";
 
 const Page = () => {
   const { logout, resendEmailVerification } = useAuth({
@@ -12,6 +13,7 @@ const Page = () => {
   });
 
   const [status, setStatus] = useState(null);
+  const [isResending, setIsResending] = useState(false);
 
   return (
     <AuthCard>
@@ -29,8 +31,25 @@ const Page = () => {
       )}
 
       <div className="mt-4 flex items-center justify-between">
-        <Button onClick={() => resendEmailVerification({ setStatus })}>
-          Resend Verification Email
+        <Button 
+          onClick={async () => {
+            setIsResending(true);
+            try {
+              await resendEmailVerification({ setStatus });
+            } finally {
+              setIsResending(false);
+            }
+          }}
+          disabled={isResending}
+        >
+          {isResending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            "Resend Verification Email"
+          )}
         </Button>
 
         <button
