@@ -1398,6 +1398,7 @@ const SacramentPage = () => {
               </div>
               
             </form>
+            )}
             </div>
             <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end items-center space-x-3">
               <Button
@@ -1425,7 +1426,6 @@ const SacramentPage = () => {
                 )}
               </Button>
             </div>
-            )}
           </div>
         </div>
       )}
