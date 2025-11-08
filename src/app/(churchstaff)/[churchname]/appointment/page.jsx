@@ -236,7 +236,7 @@ const AppointmentPage = () => {
       setCanApproveAppointment(true); // No requirements means can approve
       setAllSubServicesCompleted(true); // No sub-services means all completed
     }
-  }, [appointmentDetails]);
+  }, [appointmentDetails, appointmentDetails?.formConfiguration?.sub_services]);
 
   // Get unique services for filter dropdown
   const uniqueServices = [...new Set(appointments.map(apt => apt.ServiceName))].filter(Boolean).sort();
