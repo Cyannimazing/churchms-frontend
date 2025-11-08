@@ -1290,17 +1290,8 @@ const SacramentApplicationModal = ({ isOpen, onClose, church }) => {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center md:p-4">
-      <div className="bg-white md:rounded-xl shadow-2xl w-full md:max-w-5xl h-full md:h-auto overflow-hidden flex flex-col" style={{
-        maxHeight: '100vh', // Full height on mobile, up to 90vh on desktop
-      }}>
-        <style jsx>{`
-          @media (min-width: 768px) {
-            div[style*="maxHeight"] {
-              max-height: 90vh !important;
-            }
-          }
-        `}</style>
+    <div className="fixed inset-0 z-50 md:bg-black/50 md:backdrop-blur-sm md:flex md:items-center md:justify-center md:p-4">
+      <div className="bg-white md:rounded-xl shadow-2xl w-screen h-screen md:w-full md:max-w-5xl md:h-auto overflow-hidden flex flex-col md:max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
