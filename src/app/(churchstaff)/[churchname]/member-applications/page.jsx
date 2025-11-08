@@ -582,7 +582,6 @@ const MemberApplicationsContent = () => {
                 placeholder="Add any notes about this application..."
               />
             </div>
-            </div>
               </>
             )}
           </div>
