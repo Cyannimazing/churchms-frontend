@@ -354,7 +354,7 @@ export default function Signature() {
                           </div>
                           <div className="relative w-full h-24 bg-white rounded border border-gray-200">
                             <Image
-                              src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/signatures/${sig.id}/image`}
+                              src={sig.imageUrl || `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/signatures/${sig.id}/image`}
                               alt={`${sig.name}'s signature`}
                               fill
                               unoptimized
