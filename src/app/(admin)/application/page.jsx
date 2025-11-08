@@ -153,21 +153,23 @@ const Dashboard = () => {
     }
   };
 
-  // Preview a document in a new tab (use direct URL to avoid CORS on blobs)
-  const previewDocument = (documentId) => {
-    const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/${documentId}`
+  // Preview a document in a new tab using signed URL from API (fallback to legacy path)
+  const previewDocument = (doc) => {
+    const url = doc?.DocumentUrl || `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/${doc?.DocumentID}`
+    if (!url) return;
     window.open(url, '_blank', 'noopener,noreferrer')
   };
 
-  // Download a document (navigate to direct URL; browser handles download)
-  const downloadDocument = (documentId, documentType) => {
-    const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/${documentId}`
+  // Download a document (uses the same signed URL)
+  const downloadDocument = (doc) => {
+    const url = doc?.DocumentUrl || `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/${doc?.DocumentID}`
+    if (!url) return;
     const link = document.createElement('a')
     link.href = url
     link.target = '_blank'
     link.rel = 'noopener noreferrer'
     // Let server filename win; fallback to documentType
-    link.download = documentType || 'document'
+    link.download = doc?.DocumentType || 'document'
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -441,7 +443,7 @@ const Dashboard = () => {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button
-                          onClick={() => previewDocument(doc.DocumentID)}
+                          onClick={() => previewDocument(doc)}
                           variant="outline"
                           className="inline-flex items-center justify-center p-1.5 text-blue-600 hover:text-blue-800 disabled:text-gray-400 min-h-0 h-auto border-blue-200 bg-blue-50 hover:bg-blue-100"
                           disabled={doc.FileExists === false}
@@ -450,9 +452,7 @@ const Dashboard = () => {
                           <Eye className="h-3 w-3" />
                         </Button>
                         <Button
-                          onClick={() =>
-                            downloadDocument(doc.DocumentID, doc.DocumentType)
-                          }
+                          onClick={() => downloadDocument(doc)}
                           variant="outline"
                           className="inline-flex items-center justify-center p-1.5 text-green-600 hover:text-green-800 disabled:text-gray-400 min-h-0 h-auto border-green-200 bg-green-50 hover:bg-green-100"
                           disabled={doc.FileExists === false}
