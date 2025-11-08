@@ -88,15 +88,21 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
 
   const allTimeSlots = generateTimeSlots();
   
-  // Filter out occupied time slots
+  // Precompute current schedule's own time ranges (to allow them when editing)
+  const ownTimeRanges = schedule?.times?.map(t => ({
+    start: (t.StartTime || '').slice(0,5),
+    end: (t.EndTime || '').slice(0,5)
+  })) || [];
+  
+  // Filter out occupied time slots (but always allow current schedule's own times when editing)
   const isTimeOccupied = (time) => {
+    // If editing and time is within the existing schedule range, treat as NOT occupied
+    if (schedule && ownTimeRanges.some(r => time >= r.start && time < r.end)) return false;
     if (!occupiedTimes || occupiedTimes.length === 0) return false;
     
     return occupiedTimes.some(occupied => {
       const occupiedStart = occupied.start;
       const occupiedEnd = occupied.end;
-      // Check if time falls within the occupied range (including start, excluding end)
-      // For example: if occupied is 08:00-09:00, exclude 08:00 and 08:30
       return time >= occupiedStart && time < occupiedEnd;
     });
   };

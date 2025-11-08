@@ -690,16 +690,19 @@ const SacramentPage = () => {
       {open && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
           <div
-            className="bg-white rounded-lg shadow-2xl w-full max-w-7xl mx-4 p-6 relative max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-2xl w-full max-w-7xl mx-4 relative max-h-[90vh] overflow-hidden flex flex-col"
             role="dialog"
             aria-labelledby="modal-title"
           >
-            <h2
-              id="modal-title"
-              className="text-xl font-bold text-gray-900 mb-6"
-            >
-              {editSacramentId ? "Edit Sacrament" : "Create Sacrament"}
-            </h2>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
+              <h2
+                id="modal-title"
+                className="text-xl font-bold text-gray-900"
+              >
+                {editSacramentId ? "Edit Sacrament" : "Create Sacrament"}
+              </h2>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
             {isLoadingServiceData ? (
               <div className="space-y-6">
                 {/* Skeleton loading */}
@@ -718,7 +721,7 @@ const SacramentPage = () => {
                 </div>
               </div>
             ) : (
-            <form onSubmit={handleSubmit} className="">
+            <form id="sacramentForm" onSubmit={handleSubmit} className="">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Column - Main Fields */}
                 <div className="space-y-6">
@@ -1394,32 +1397,34 @@ const SacramentPage = () => {
                 </div>
               </div>
               
-              <div className="flex justify-end items-center space-x-3 mt-6">
-                <Button
-                  type="button"
-                  onClick={handleClose}
-                  variant="outline"
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium"
-                  disabled={isSubmitting || !form.ServiceName.trim()}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {editSacramentId ? "Updating..." : "Creating..."}
-                    </>
-                  ) : (
-                    <>{editSacramentId ? "Update Sacrament" : "Create Sacrament"}</>
-                  )}
-                </Button>
-              </div>
             </form>
+            </div>
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end items-center space-x-3">
+              <Button
+                type="button"
+                onClick={handleClose}
+                variant="outline"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="sacramentForm"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium"
+                disabled={isSubmitting || isLoadingServiceData || !form.ServiceName.trim()}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {editSacramentId ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>{editSacramentId ? "Update Sacrament" : "Create Sacrament"}</>
+                )}
+              </Button>
+            </div>
             )}
           </div>
         </div>
