@@ -44,6 +44,7 @@ const MemberDirectoryPage = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [memberToMarkAway, setMemberToMarkAway] = useState(null);
   const [showComingSoonAlert, setShowComingSoonAlert] = useState(false);
+  const [isModalLoading, setIsModalLoading] = useState(false);
 
   useEffect(() => {
     if (hasAccess) fetchMembers();
@@ -102,6 +103,9 @@ const MemberDirectoryPage = () => {
   const handleViewMember = (member) => {
     setSelectedMember(member);
     setShowModal(true);
+    setIsModalLoading(true);
+    // Simulate brief loading for smooth UX
+    setTimeout(() => setIsModalLoading(false), 300);
   };
 
   const handleSearch = (term) => {
@@ -348,6 +352,37 @@ const MemberDirectoryPage = () => {
             maxHeight: 'calc(95vh - 140px)'
           }}>
             <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                {isModalLoading ? (
+                  /* Skeleton Loading */
+                  <>
+                    {[1, 2, 3, 4, 5].map((section) => (
+                      <div key={section} className="space-y-4">
+                        <div className="h-4 bg-gray-200 rounded w-1/4 mb-3 animate-pulse"></div>
+                        <div className="bg-white rounded-lg p-6 border border-gray-200">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-3">
+                              <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                              <div className="h-3 bg-gray-200 rounded w-full animate-pulse"></div>
+                              <div className="h-3 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                            </div>
+                            <div className="space-y-3">
+                              <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                              <div className="h-3 bg-gray-200 rounded w-full animate-pulse"></div>
+                              <div className="h-3 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                            </div>
+                            <div className="space-y-3">
+                              <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                              <div className="h-3 bg-gray-200 rounded w-full animate-pulse"></div>
+                              <div className="h-3 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  /* Actual Content */
+                  <>
                 {/* Parish Registration - View Mode */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Parish Registration</h3>
@@ -691,6 +726,8 @@ const MemberDirectoryPage = () => {
                     <p className="text-sm text-gray-900">{member.notes}</p>
                   </div>
                   </div>
+                )}
+                  </>
                 )}
             </div>
           </div>

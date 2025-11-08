@@ -7,6 +7,7 @@ import { Button } from "@/components/Button.jsx";
 import Input from "@/components/Input.jsx";
 import Label from "@/components/Label.jsx";
 import ConfirmDialog from "@/components/ConfirmDialog.jsx";
+import DataLoading from "@/components/DataLoading";
 import { useAuth } from "@/hooks/auth.jsx";
 import { useParams } from "next/navigation";
 import axios from "@/lib/axios";
@@ -310,9 +311,8 @@ export default function Signature() {
                   )}
                   
                   {loading ? (
-                    <div className="text-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="mt-4 text-sm text-gray-500">Loading signatures...</p>
+                    <div className="py-8">
+                      <DataLoading message="Loading signatures..." />
                     </div>
                   ) : signatures.length === 0 ? (
                     <div className="text-center py-12">

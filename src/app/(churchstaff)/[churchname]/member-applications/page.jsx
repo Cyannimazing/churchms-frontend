@@ -26,6 +26,7 @@ const MemberApplicationsContent = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [highlightedApplicationId, setHighlightedApplicationId] = useState(null);
   const highlightedRowRef = useRef(null);
+  const [isModalLoading, setIsModalLoading] = useState(false);
   const itemsPerPage = 6;
 
   // Permission helper function
@@ -136,6 +137,9 @@ const MemberApplicationsContent = () => {
   const handleViewApplication = (application) => {
     setSelectedApplication(application);
     setShowModal(true);
+    setIsModalLoading(true);
+    // Simulate brief loading for smooth UX
+    setTimeout(() => setIsModalLoading(false), 300);
   };
 
   const handleAction = async (application, action) => {
@@ -209,6 +213,32 @@ const MemberApplicationsContent = () => {
             maxHeight: 'calc(95vh - 140px)'
           }}>
             <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+            {isModalLoading ? (
+              /* Skeleton Loading */
+              <>
+                {[1, 2, 3, 4].map((section) => (
+                  <div key={section} className="space-y-4">
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-3 animate-pulse"></div>
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 rounded w-full animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 rounded w-full animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              /* Actual Content */
+              <>
             {/* Parish Registration Info */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">Parish Registration</h3>
@@ -553,6 +583,8 @@ const MemberApplicationsContent = () => {
               />
             </div>
             </div>
+              </>
+            )}
           </div>
 
           {/* Footer */}
@@ -561,7 +593,7 @@ const MemberApplicationsContent = () => {
               onClick={() => handleAction(app, "reject")}
               variant="outline"
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 border-red-200 cursor-pointer"
-              disabled={actionLoading || !canReviewApplication}
+              disabled={actionLoading || !canReviewApplication || isModalLoading}
               title={!canReviewApplication ? 'You do not have permission to review applications' : ''}
             >
               <XCircle className="h-4 w-4 mr-2" />
@@ -570,7 +602,7 @@ const MemberApplicationsContent = () => {
             <Button
               onClick={() => handleAction(app, "approve")}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 cursor-pointer"
-              disabled={actionLoading || !canReviewApplication}
+              disabled={actionLoading || !canReviewApplication || isModalLoading}
               title={!canReviewApplication ? 'You do not have permission to review applications' : ''}
             >
               <CheckCircle className="h-4 w-4 mr-2" />
