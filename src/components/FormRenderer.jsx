@@ -102,6 +102,12 @@ const FormRenderer = ({ formConfiguration, formData = {}, updateField, onFormDat
           ...prev,
           [statusKey]: isCompleted
         }))
+        
+        // Notify parent of sub-service completion status change
+        if (onSubmissionStatusChange) {
+          onSubmissionStatusChange(subServiceId, isCompleted, 'sub_service_completion')
+        }
+        
         console.log('Sub-service completion updated:', response.data)
       }
     } catch (error) {
