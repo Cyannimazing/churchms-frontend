@@ -3,6 +3,29 @@ import axios from "@/lib/axios";
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+// Helper function to get dashboard route based on user role
+export const getDashboardRoute = (user) => {
+  if (!user?.profile?.system_role?.role_name) return "/";
+  
+  const roleName = user.profile.system_role.role_name;
+  
+  switch (roleName) {
+    case "Admin":
+      return "/admin-dashboard";
+    case "ChurchOwner":
+      return "/church";
+    case "Regular":
+      return "/dashboard";
+    case "ChurchStaff":
+      if (user.church?.ChurchName) {
+        return `/${user.church.ChurchName.replace(/\s+/g, "-").toLowerCase()}/dashboard`;
+      }
+      return "/";
+    default:
+      return "/";
+  }
+};
+
 export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
   const router = useRouter();
   const params = useParams();
@@ -39,14 +62,19 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
       .then(async (response) => {
         // Store token in localStorage
         localStorage.setItem("auth_token", response.data.token);
-        await mutate();
-        // Redirect after successful registration
-        window.location.href = "/";
+        
+        // Fetch user data to determine dashboard route
+        const userData = await axios.get("/api/user").then((res) => res.data);
+        await mutate(userData);
+        
+        // Return user data to caller for redirection
+        return userData;
       })
       .catch((error) => {
         if (error.response.status !== 422) throw error;
 
         setErrors(error.response.data.errors);
+        return null;
       });
   };
 
@@ -59,14 +87,19 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
       .then(async (response) => {
         // Store token in localStorage
         localStorage.setItem("auth_token", response.data.token);
-        await mutate();
-        // Redirect after successful login
-        window.location.href = "/";
+        
+        // Fetch user data and update cache
+        const userData = await axios.get("/api/user").then((res) => res.data);
+        await mutate(userData);
+        
+        // Return user data to caller for redirection
+        return userData;
       })
       .catch((error) => {
         if (error.response.status !== 422) throw error;
 
         setErrors(error.response.data.errors);
+        return null;
       });
   };
 

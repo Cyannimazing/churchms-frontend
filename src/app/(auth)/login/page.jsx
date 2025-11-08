@@ -6,7 +6,7 @@ import InputError from "@/components/InputError.jsx";
 import Label from "@/components/Label.jsx";
 import Link from "next/link";
 import Image from "next/image";
-import { useAuth } from "@/hooks/auth.jsx";
+import { useAuth, getDashboardRoute } from "@/hooks/auth.jsx";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthSessionStatus from "../AuthSessionStatus";
@@ -43,13 +43,21 @@ const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      await login({
+      const userData = await login({
         email,
         password,
         remember: shouldRemember,
         setErrors,
         setStatus,
       });
+
+      if (userData) {
+        const dest = getDashboardRoute(userData);
+        // Navigate to role-based dashboard
+        // Use router for SPA navigation
+        router.push(dest);
+        return; // component will unmount on navigation
+      }
     } finally {
       setIsLoading(false);
     }
@@ -230,6 +238,18 @@ const LoginForm = () => {
           animation: slideRight 0.8s ease-out;
         }
       `}</style>
+
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-lg px-4 py-3 shadow-md flex items-center">
+            <svg className="animate-spin h-5 w-5 text-indigo-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            <span className="text-sm text-gray-700">Signing in...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
