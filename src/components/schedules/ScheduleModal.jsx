@@ -47,6 +47,7 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingScheduleData, setIsLoadingScheduleData] = useState(false);
   const [errors, setErrors] = useState({});
   const [occupiedTimes, setOccupiedTimes] = useState([]);
 
@@ -161,6 +162,7 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
 
   useEffect(() => {
     if (schedule) {
+      setIsLoadingScheduleData(true);
       // Populate form with existing schedule data
       setFormData({
         serviceId: schedule.ServiceID || "",
@@ -190,6 +192,7 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
               endTime: ""
             }]
       });
+      setIsLoadingScheduleData(false);
     } else {
       // Reset form for new schedule
       setFormData({
@@ -387,15 +390,6 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
         role="dialog"
         aria-labelledby="modal-title"
       >
-        <Button
-          onClick={onClose}
-          variant="outline"
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 p-2 min-h-0 h-auto border-none hover:bg-gray-50 rounded-full z-10 transition-all duration-200"
-          aria-label="Close modal"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-        
         <div className="px-8 py-6 border-b border-gray-100">
           <h2
             id="modal-title"
@@ -409,6 +403,19 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
         </div>
 
         <div className="flex-1 overflow-y-auto">
+          {isLoadingScheduleData ? (
+            <div className="px-8 py-6 space-y-6">
+              {/* Skeleton loading */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i}>
+                    <div className="h-4 bg-gray-200 rounded w-32 mb-2 animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 rounded w-full animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit}>
             {/* Check if it's a OneTime event for special layout */}
             {formData.recurrences[0]?.recurrenceType === "OneTime" ? (
@@ -769,6 +776,7 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
               </div>
             )}
           </form>
+          )}
         </div>
 
         <div className="flex justify-end items-center space-x-3 p-6 border-t border-gray-200">

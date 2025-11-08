@@ -694,14 +694,6 @@ const SacramentPage = () => {
             role="dialog"
             aria-labelledby="modal-title"
           >
-            <Button
-              onClick={handleClose}
-              variant="outline"
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 p-1.5 min-h-0 h-auto border-none hover:bg-gray-100"
-              aria-label="Close modal"
-            >
-              <X className="h-4 w-4" />
-            </Button>
             <h2
               id="modal-title"
               className="text-xl font-bold text-gray-900 mb-6"

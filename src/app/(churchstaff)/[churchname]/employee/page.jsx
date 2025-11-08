@@ -1034,13 +1034,6 @@ const EmployeePage = () => {
           >
             {/* Header */}
             <div className="relative bg-gray-100 px-4 py-4 rounded-t-lg">
-              <button
-                onClick={handleClose}
-                className="absolute top-4 right-4 text-gray-800 hover:text-gray-900 transition-colors duration-200"
-                aria-label="Close modal"
-              >
-                <X className="h-6 w-6" />
-              </button>
               <div className="flex items-center space-x-3">
                 <div>
                   <h2 id="modal-title" className="text-xl font-bold text-gray-800">
