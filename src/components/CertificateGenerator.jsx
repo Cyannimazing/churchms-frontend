@@ -108,11 +108,19 @@ const CertificateGenerator = ({
 
   const loadCrossImage = async () => {
     try {
-      const response = await fetch('/Images/CertificateLogo.png');
+      const response = await fetch('/images/CertificateLogo.png');
+      if (!response.ok) {
+        console.error('Failed to fetch cross image:', response.status);
+        return;
+      }
       const blob = await response.blob();
       const reader = new FileReader();
       reader.onloadend = () => {
+        console.log('Cross image loaded successfully as base64');
         setCrossImageBase64(reader.result);
+      };
+      reader.onerror = () => {
+        console.error('Failed to convert cross image to base64');
       };
       reader.readAsDataURL(blob);
     } catch (error) {
