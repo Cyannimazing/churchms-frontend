@@ -25,6 +25,7 @@ const CertificateGenerator = ({
   const [isLoadingSignatures, setIsLoadingSignatures] = useState(false);
   const [isLoadingClergy, setIsLoadingClergy] = useState(false);
   const [validationAlert, setValidationAlert] = useState(null);
+  const [crossImageBase64, setCrossImageBase64] = useState(null);
 
   // Certificate field mappings for different types
   const certificateFields = {
@@ -100,8 +101,23 @@ const CertificateGenerator = ({
       fetchAppointmentData();
       fetchSignatures();
       fetchClergy();
+      loadCrossImage();
     }
   }, [isOpen, selectedAppointment]);
+
+  const loadCrossImage = async () => {
+    try {
+      const response = await fetch('/Images/CertificateLogo.png');
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCrossImageBase64(reader.result);
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Failed to load cross image:', error);
+    }
+  };
 
   const fetchChurchInfo = async () => {
     if (!selectedAppointment) return;
@@ -579,6 +595,8 @@ const CertificateGenerator = ({
         issued_by: issuedBy
       });
       
+      console.log('Cross image loaded:', crossImageBase64 ? 'Yes' : 'No');
+      
       const verificationResponse = await axios.post('/api/certificate-verification', {
         appointment_id: selectedAppointment.AppointmentID,
         certificate_type: certificateType === 'marriage' ? 'matrimony' : certificateType,
@@ -598,7 +616,7 @@ const CertificateGenerator = ({
       
       console.log('Verification created successfully:', verificationResponse.data);
       const verificationUrl = verificationResponse.data.verification_url;
-      const html = generateCertificateHTML(certificateType, certificateData, day, month, year, verificationUrl, signatureImageBase64);
+      const html = generateCertificateHTML(certificateType, certificateData, day, month, year, verificationUrl, signatureImageBase64, crossImageBase64);
       generatePDFFromHTML(html);
       
     } catch (error) {
@@ -613,9 +631,6 @@ const CertificateGenerator = ({
         message: errorMsg
       });
       
-      // Generate certificate without QR code if verification fails
-      const html = generateCertificateHTML(certificateType, certificateData, day, month, year, null, signatureImageBase64);
-      generatePDFFromHTML(html);
     }
   };
   
@@ -668,7 +683,7 @@ const CertificateGenerator = ({
     }, 1000);
   };
 
-  const generateCertificateHTML = (type, data, day, month, year, verificationUrl, signatureImageBase64) => {
+  const generateCertificateHTML = (type, data, day, month, year, verificationUrl, signatureImageBase64, crossImageBase64) => {
     // Get church info from selectedAppointment or use defaults
     const churchName = selectedAppointment?.church?.church_name || selectedAppointment?.ChurchName || 'Holy Church';
     const churchStreet = selectedAppointment?.church?.street || selectedAppointment?.Street || '';
@@ -858,7 +873,7 @@ const CertificateGenerator = ({
       </head>
       <body>
         <div class="certificate-container">
-          ${generateCertificateContent(type, data, day, month, year, verificationUrl, signatureImageBase64)}
+          ${generateCertificateContent(type, data, day, month, year, verificationUrl, signatureImageBase64, crossImageBase64)}
         </div>
       </body>
       </html>
@@ -867,7 +882,7 @@ const CertificateGenerator = ({
     return baseHTML;
   };
 
-  const generateCertificateContent = (type, data, day, month, year, verificationUrl, signatureImageBase64) => {
+  const generateCertificateContent = (type, data, day, month, year, verificationUrl, signatureImageBase64, crossImageBase64) => {
     // Use dynamic church info from API
     const churchName = churchInfo?.ChurchName || 'Holy Church';
     const churchStreet = churchInfo?.Street || '';
@@ -876,19 +891,19 @@ const CertificateGenerator = ({
     
     switch (type) {
       case 'marriage':
-        return generateMarriageCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64);
+        return generateMarriageCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64);
       case 'baptism':
-        return generateBaptismCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64);
+        return generateBaptismCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64);
       case 'firstCommunion':
-        return generateFirstCommunionCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64);
+        return generateFirstCommunionCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64);
       case 'confirmation':
-        return generateConfirmationCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64);
+        return generateConfirmationCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64);
       default:
-        return generateMarriageCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64);
+        return generateMarriageCertificate(data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64);
     }
   };
 
-  const generateMarriageCertificate = (data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64) => {
+  const generateMarriageCertificate = (data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64) => {
     // Format address - only include non-empty parts (exclude province)
     const addressParts = [];
     if (churchStreet) addressParts.push(churchStreet);
@@ -913,7 +928,7 @@ const CertificateGenerator = ({
       <div class="header-section">
         <h1 class="certificate-title">CERTIFICATE OF MARRIAGE</h1>
         <div style="text-align: center; margin: 20px 0;">
-          <img src="/Images/CertificateLogo.png" alt="Cross" style="width: 80px; height: 80px; object-fit: contain;" />
+          ${crossImageBase64 ? `<img src="${crossImageBase64}" alt="Cross" style="width: 80px; height: 80px; object-fit: contain;" />` : ''}
         </div>
         <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; letter-spacing: 0.1em;">Parish of</p>
         <p class="church-name">${churchName}</p>
@@ -1019,7 +1034,7 @@ const CertificateGenerator = ({
     `;
   };
 
-  const generateBaptismCertificate = (data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64) => {
+  const generateBaptismCertificate = (data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64) => {
     const fullAddress = [churchStreet, churchCity].filter(Boolean).join(', ');
     
     // Add ordinal suffix to day
@@ -1047,7 +1062,7 @@ const CertificateGenerator = ({
       <div class="header-section">
         <h1 class="certificate-title">CERTIFICATE OF BAPTISM</h1>
         <div style="text-align: center; margin: 20px 0;">
-          <img src="/Images/CertificateLogo.png" alt="Cross" style="width: 80px; height: 80px; object-fit: contain;" />
+          ${crossImageBase64 ? `<img src="${crossImageBase64}" alt="Cross" style="width: 80px; height: 80px; object-fit: contain;" />` : ''}
         </div>
         <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; letter-spacing: 0.1em;">Parish of</p>
         <p class="church-name">${churchName}</p>
@@ -1183,7 +1198,7 @@ const CertificateGenerator = ({
     `;
   };
 
-  const generateFirstCommunionCertificate = (data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64) => {
+  const generateFirstCommunionCertificate = (data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64) => {
     const fullAddress = [churchStreet, churchCity].filter(Boolean).join(', ');
     
     // Add ordinal suffix to day
@@ -1203,7 +1218,7 @@ const CertificateGenerator = ({
       <div class="header-section">
         <h1 class="certificate-title">CERTIFICATE OF FIRST COMMUNION</h1>
         <div style="text-align: center; margin: 20px 0;">
-          <img src="/Images/CertificateLogo.png" alt="Cross" style="width: 80px; height: 80px; object-fit: contain;" />
+          ${crossImageBase64 ? `<img src="${crossImageBase64}" alt="Cross" style="width: 80px; height: 80px; object-fit: contain;" />` : ''}
         </div>
         <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; letter-spacing: 0.1em;">Parish of</p>
         <p class="church-name">${churchName}</p>
@@ -1318,7 +1333,7 @@ const CertificateGenerator = ({
     `;
   };
 
-  const generateConfirmationCertificate = (data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64) => {
+  const generateConfirmationCertificate = (data, day, month, year, churchName, churchStreet, churchCity, churchProvince, verificationUrl, signatureImageBase64, crossImageBase64) => {
     const fullAddress = [churchStreet, churchCity].filter(Boolean).join(', ');
     
     // Add ordinal suffix to day
@@ -1346,7 +1361,7 @@ const CertificateGenerator = ({
       <div class="header-section">
         <h1 class="certificate-title">CERTIFICATE OF CONFIRMATION</h1>
         <div style="text-align: center; margin: 20px 0;">
-          <img src="/Images/CertificateLogo.png" alt="Cross" style="width: 80px; height: 80px; object-fit: contain;" />
+          ${crossImageBase64 ? `<img src="${crossImageBase64}" alt="Cross" style="width: 80px; height: 80px; object-fit: contain;" />` : ''}
         </div>
         <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; letter-spacing: 0.1em;">Parish of</p>
         <p class="church-name">${churchName}</p>
