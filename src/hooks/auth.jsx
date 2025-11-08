@@ -34,7 +34,7 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
   const register = async ({ setErrors, ...props }) => {
     setErrors([]);
 
-    axios
+    return axios
       .post("/api/register", props)
       .then(async (response) => {
         // Store token in localStorage
@@ -54,7 +54,7 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
     setErrors([]);
     setStatus(null);
 
-    axios
+    return axios
       .post("/api/login", props)
       .then(async (response) => {
         // Store token in localStorage

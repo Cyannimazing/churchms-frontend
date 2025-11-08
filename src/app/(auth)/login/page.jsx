@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/auth.jsx";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthSessionStatus from "../AuthSessionStatus";
-import { Mail, Lock, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import { Mail, Lock, Facebook, Twitter, Instagram, Youtube, Loader2 } from "lucide-react";
 
 const LoginForm = () => {
   const router = useRouter();
@@ -26,6 +26,7 @@ const LoginForm = () => {
   const [shouldRemember, setShouldRemember] = useState(false);
   const [errors, setErrors] = useState([]);
   const [status, setStatus] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (router.reset?.length > 0 && errors.length === 0) {
@@ -39,14 +40,19 @@ const LoginForm = () => {
 
   const submitForm = async (event) => {
     event.preventDefault();
+    setIsLoading(true);
 
-    await login({
-      email,
-      password,
-      remember: shouldRemember,
-      setErrors,
-      setStatus,
-    });
+    try {
+      await login({
+        email,
+        password,
+        remember: shouldRemember,
+        setErrors,
+        setStatus,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -158,8 +164,19 @@ const LoginForm = () => {
               </div>
 
               {/* Sign In Button */}
-              <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center">
-                Sign in now
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in now"
+                )}
               </Button>
 
               {/* Terms */}
