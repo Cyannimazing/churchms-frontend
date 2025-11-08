@@ -1290,10 +1290,17 @@ const SacramentApplicationModal = ({ isOpen, onClose, church }) => {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col" style={{
-        maxHeight: '90vh'
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center md:p-4">
+      <div className="bg-white md:rounded-xl shadow-2xl w-full md:max-w-5xl h-full md:h-auto overflow-hidden flex flex-col" style={{
+        maxHeight: '100vh', // Full height on mobile, up to 90vh on desktop
       }}>
+        <style jsx>{`
+          @media (min-width: 768px) {
+            div[style*="maxHeight"] {
+              max-height: 90vh !important;
+            }
+          }
+        `}</style>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
@@ -1450,10 +1457,10 @@ const SacramentApplicationModal = ({ isOpen, onClose, church }) => {
                     </div>
                   )}
                   
-                  {/* Two-column layout: Calendar on left, Details on right */}
-                  <div className="flex gap-4">
+                  {/* Two-column layout: Calendar on left, Details on right (stacks on mobile) */}
+                  <div className="flex flex-col md:flex-row gap-4">
                     {/* Left Column: Calendar */}
-                    <div className="flex-1">
+                    <div className="flex-1 md:max-w-[50%]">
                       {/* Calendar Header */}
                       <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
                         <button
@@ -1576,7 +1583,7 @@ const SacramentApplicationModal = ({ isOpen, onClose, church }) => {
                     </div>
                     
                     {/* Right Column: Schedule Details */}
-                    <div className="flex-1 border-l border-gray-200 pl-4">
+                    <div className="flex-1 md:border-l border-gray-200 md:pl-4 mt-4 md:mt-0">
                       {selectedDate ? (
                         <div>
                           {slotsLoading ? (
