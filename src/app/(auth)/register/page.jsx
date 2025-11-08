@@ -402,6 +402,7 @@ const RegisterForm = () => {
                       onChange={handleChange}
                       className="block mt-1 w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm text-gray-900"
                       placeholder="123 Main St, Apt 4B"
+                      required
                     />
                   </div>
 
@@ -418,6 +419,7 @@ const RegisterForm = () => {
                         onChange={handleChange}
                         className="block mt-1 w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm text-gray-900"
                         placeholder="Poblacion District"
+                        required
                       />
                     </div>
                     <div>
@@ -432,6 +434,7 @@ const RegisterForm = () => {
                         onChange={handleChange}
                         className="block mt-1 w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm text-gray-900"
                         placeholder="8000"
+                        required
                       />
                     </div>
                   </div>
@@ -448,6 +451,7 @@ const RegisterForm = () => {
                       onChange={handleChange}
                       className="block mt-1 w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm text-gray-900"
                       placeholder="+63 912 345 6789"
+                      required
                     />
                     <InputError messages={errors.contact_number} className="mt-1" />
                   </div>
