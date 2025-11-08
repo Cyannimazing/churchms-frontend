@@ -1650,8 +1650,7 @@ const PropertiesPanel = ({ element, onUpdate, onDelete }) => {
               const value = e.target.value
                 .toLowerCase()
                 .replace(/[^a-z0-9_]/g, '_')
-                .replace(/_+/g, '_')
-                .replace(/^_|_$/g, '');
+                .replace(/_+/g, '_');
               onUpdate(element.id, 'elementId', value);
             }}
             placeholder="e.g., first_name, email_address"
