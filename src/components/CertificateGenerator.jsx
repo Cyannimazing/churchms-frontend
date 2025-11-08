@@ -26,6 +26,7 @@ const CertificateGenerator = ({
   const [isLoadingClergy, setIsLoadingClergy] = useState(false);
   const [validationAlert, setValidationAlert] = useState(null);
   const [crossImageBase64, setCrossImageBase64] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Certificate field mappings for different types
   const certificateFields = {
@@ -557,6 +558,8 @@ const CertificateGenerator = ({
       return;
     }
     
+    setIsGenerating(true);
+    
     const appointmentDate = new Date(selectedAppointment.AppointmentDate);
     const day = appointmentDate.getDate();
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -631,6 +634,11 @@ const CertificateGenerator = ({
         message: errorMsg
       });
       
+      // Generate certificate without QR code if verification fails
+      const html = generateCertificateHTML(certificateType, certificateData, day, month, year, null, signatureImageBase64, crossImageBase64);
+      generatePDFFromHTML(html);
+    } finally {
+      setIsGenerating(false);
     }
   };
   
@@ -1719,10 +1727,19 @@ const CertificateGenerator = ({
                 <Button
                   onClick={generateCertificatePDF}
                   className="flex items-center"
-                  disabled={isLoadingChurch || !churchInfo}
+                  disabled={isLoadingChurch || !churchInfo || isGenerating}
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {isLoadingChurch ? 'Loading...' : 'Generate Certificate'}
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 mr-2" />
+                      {isLoadingChurch ? 'Loading...' : 'Generate Certificate'}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
