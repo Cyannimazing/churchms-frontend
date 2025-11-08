@@ -107,32 +107,24 @@ const UserDetail = () => {
         <div className="bg-white overflow-hidden shadow-sm rounded-lg h-full flex flex-col">
           <div className="p-6 bg-white border-b border-gray-200 flex-1 overflow-auto">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <Link href="/users">
-                  <Button
-                    variant="outline"
-                    className="px-3 flex py-2 text-sm font-medium text-gray-700 bg-white border-gray-300"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
-                  </Button>
-                </Link>
-                <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">
-                    {getFullName(user.profile)}
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-1">
-                    User Details & Information
-                  </p>
-                </div>
-              </div>
-              <Link href={`/users/${id}/edit`}>
-                <Button variant="action">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit User
+            <div className="flex items-center space-x-4 mb-6">
+              <Link href="/users">
+                <Button
+                  variant="outline"
+                  className="px-3 flex py-2 text-sm font-medium text-gray-700 bg-white border-gray-300"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
                 </Button>
               </Link>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  {getFullName(user.profile)}
+                </h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  User Details & Information
+                </p>
+              </div>
             </div>
 
             {/* Alert */}
