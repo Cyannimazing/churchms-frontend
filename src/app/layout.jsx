@@ -18,6 +18,11 @@ const RootLayout = ({ children }) => {
 
 export const metadata = {
   title: "FaithSeeker",
+  icons: {
+    icon: '/images/LOGO.webp',
+    shortcut: '/images/LOGO.webp',
+    apple: '/images/LOGO.webp',
+  },
 };
 
 export default RootLayout;
