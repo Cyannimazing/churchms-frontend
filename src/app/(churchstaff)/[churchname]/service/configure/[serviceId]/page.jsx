@@ -1647,18 +1647,13 @@ const PropertiesPanel = ({ element, onUpdate, onDelete }) => {
             type="text"
             value={element.elementId || ''}
             onChange={(e) => {
-              const value = e.target.value
-                .toLowerCase()
-                .replace(/[^a-z0-9_]/g, '_')
-                .replace(/_+/g, '_');
-              onUpdate(element.id, 'elementId', value);
+              onUpdate(element.id, 'elementId', e.target.value.toLowerCase());
             }}
             placeholder="e.g., first_name, email_address"
             className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono"
-            title="Only lowercase letters, numbers, and underscores allowed"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Used to identify this field in PDFs and reports. Only a-z, 0-9, and _ allowed.
+            Used to identify this field in PDFs and reports.
           </p>
         </div>
 
