@@ -96,12 +96,6 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
         return userData;
       })
       .catch((error) => {
-        // Handle "already logged in" error (403)
-        if (error.response?.status === 403) {
-          setErrors({ general: [error.response.data.message] });
-          return null;
-        }
-        
         if (error.response.status !== 422) throw error;
 
         setErrors(error.response.data.errors);
