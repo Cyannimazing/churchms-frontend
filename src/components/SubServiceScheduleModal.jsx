@@ -138,17 +138,6 @@ const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, appointmentDa
     setError("");
   };
 
-  const handleSkip = () => {
-    if (isLast) {
-      onComplete?.(picks);
-      return;
-    }
-    setCurrentIndex((idx) => idx + 1);
-    setCurrentDate("");
-    setSelectedTime(null);
-    setError("");
-  };
-
   const formatTime12Hour = (time) => {
     if (!time) return "";
     const [hourStr, minuteStr] = time.split(":");
@@ -317,14 +306,6 @@ const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, appointmentDa
             Appointment ID: {appointmentId}
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleSkip}
-              className="px-3 py-1.5 text-sm"
-            >
-              {schedules.length === 0 ? "Skip" : "Skip This Step"}
-            </Button>
             <Button
               type="button"
               onClick={handleNextWrapped}
