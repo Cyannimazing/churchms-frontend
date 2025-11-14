@@ -194,6 +194,13 @@ const ChurchRegistrationPage = () => {
   // Handle input change
   const handleChange = async (e) => {
     const { name, value } = e.target;
+
+    let newValue = value;
+
+    // Restrict Church Name to letters, numbers, and spaces only (no special characters like . - * etc.)
+    if (name === "ChurchName") {
+      newValue = value.replace(/[^A-Za-z0-9\s]/g, "");
+    }
     
     // If province changes, fetch cities for that province
     if (name === "Province") {
@@ -209,13 +216,13 @@ const ChurchRegistrationPage = () => {
       } else {
         setCities([]);
       }
-      
-      setFormData((prev) => ({
-        ...prev,
-        Province: value,
-        City: "", // Reset city when province changes
-      }));
-    } else {
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }));
+  };
       setFormData((prev) => ({
         ...prev,
         [name]: value,
