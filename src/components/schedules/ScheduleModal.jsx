@@ -94,7 +94,14 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
     end: (t.EndTime || '').slice(0,5)
   })) || [];
   
-  // Filter out occupied time slots (but always allow current schedule's own times when editing)
+  // Helper: check if a [start, end) range belongs entirely to this schedule's own existing time ranges
+  const isWithinOwnRange = (start, end) => {
+    if (!schedule || !ownTimeRanges.length) return false;
+    return ownTimeRanges.some(r => start >= r.start && end <= r.end);
+  };
+  
+  // Filter out occupied *points* in time (individual 30-min ticks)
+  // but always allow current schedule's own times when editing
   const isTimeOccupied = (time) => {
     // If editing and time is within the existing schedule range, treat as NOT occupied
     if (schedule && ownTimeRanges.some(r => time >= r.start && time < r.end)) return false;
@@ -348,10 +355,32 @@ const ScheduleModal = ({ isOpen, onClose, schedule, services, onSuccess }) => {
     });
   };
 
-  // Filter end-time options based on selected start time (must be after start)
+  // Check if a [start, end) range overlaps any occupied schedule range
+  const doesRangeOverlapOccupied = (start, end) => {
+    if (!occupiedTimes || occupiedTimes.length === 0) return false;
+
+    // If we're editing and the entire range fits inside one of our own existing ranges,
+    // treat it as non-conflicting so the current schedule can be preserved/adjusted.
+    if (isWithinOwnRange(start, end)) return false;
+
+    // Treat ranges as half-open [start, end) so touching at the boundary is allowed
+    // (e.g., 6:00-7:00 and 7:00-8:00 do not conflict).
+    return occupiedTimes.some(({ start: occStart, end: occEnd }) => {
+      return start < occEnd && end > occStart; // standard interval overlap check
+    });
+  };
+
+  // Filter end-time options based on selected start time:
+  // - must be after the start
+  // - and the whole [start, end) range must NOT cross any occupied time range
   const endTimeOptions = (start) => {
     if (!start) return timeSlots; // nothing selected yet
-    return timeSlots.filter(slot => slot.value > start);
+
+    return timeSlots.filter(slot => {
+      const end = slot.value;
+      if (end <= start) return false;
+      return !doesRangeOverlapOccupied(start, end);
+    });
   };
 
   const removeTime = (index) => {
