@@ -214,6 +214,7 @@ const SacramentPage = () => {
           fee: v.fee ?? 0,
         })),
         sub_services: (localSacrament.sub_services || []).map(ss => ({
+          id: ss.SubServiceID || ss.id,
           SubServiceName: ss.SubServiceName || "",
           Description: ss.Description || "",
           IsActive: ss.IsActive !== undefined ? ss.IsActive : true,
@@ -236,6 +237,7 @@ const SacramentPage = () => {
             };
           }),
           requirements: (ss.requirements || []).map(req => ({
+            id: req.RequirementID || req.id,
             RequirementName: req.RequirementName || "",
             isNeeded: req.isNeeded !== undefined ? req.isNeeded : true,
           })),
@@ -271,6 +273,7 @@ const SacramentPage = () => {
           fee: v.fee ?? 0,
         })),
         sub_services: (sacrament.sub_services || []).map(ss => ({
+          id: ss.SubServiceID || ss.id,
           SubServiceName: ss.SubServiceName || "",
           Description: ss.Description || "",
           IsActive: ss.IsActive !== undefined ? ss.IsActive : true,
@@ -293,6 +296,7 @@ const SacramentPage = () => {
             };
           }),
           requirements: (ss.requirements || []).map(req => ({
+            id: req.RequirementID || req.id,
             RequirementName: req.RequirementName || "",
             isNeeded: req.isNeeded !== undefined ? req.isNeeded : true,
           })),
@@ -1086,6 +1090,7 @@ const SacramentPage = () => {
                             sub_services: [
                               ...form.sub_services,
                               {
+                                id: null,
                                 SubServiceName: "",
                                 Description: "",
                                 IsActive: true,
@@ -1324,6 +1329,7 @@ const SacramentPage = () => {
                                     onClick={() => {
                                       const newSubServices = [...form.sub_services];
                                       newSubServices[subIndex].requirements.push({
+                                        id: null,
                                         RequirementName: "",
                                         isNeeded: true
                                       });

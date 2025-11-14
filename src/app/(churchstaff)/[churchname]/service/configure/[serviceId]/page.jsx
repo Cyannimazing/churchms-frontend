@@ -322,7 +322,8 @@ const FormBuilderPage = () => {
             const elements = formElements;
             
             const reqs = configResponse.data.requirements?.map(req => ({
-              id: Date.now() + Math.random(), // Generate unique ID
+              // Use backend RequirementID so submissions stay linked even after edits
+              id: req.id,
               description: req.description,
               needed: req.is_needed
             })) || [];
@@ -574,6 +575,7 @@ const FormBuilderPage = () => {
           }
         })),
         requirements: requirements.map(req => ({
+          id: req.id ?? null,
           description: req.description,
           is_needed: req.needed
         }))
