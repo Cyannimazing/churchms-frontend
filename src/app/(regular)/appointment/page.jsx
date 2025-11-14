@@ -110,6 +110,18 @@ const AppointmentContent = () => {
     return null;
   };
 
+  const getDaysUntilDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const eventDate = new Date(date);
+    eventDate.setHours(0, 0, 0, 0);
+    const diffMs = eventDate.getTime() - today.getTime();
+    return Math.round(diffMs / (1000 * 60 * 60 * 24));
+  };
+
   const getHoursElapsed = (createdAt) => {
     const created = parseDate(createdAt);
     if (!created) return 0;
@@ -227,6 +239,12 @@ const AppointmentContent = () => {
                 {appointments.map((appointment) => {
                   const isExpiring = isExpiringSoon(appointment);
                   const remainingHours = getRemainingHours(getCreatedAt(appointment));
+                  const daysUntilService = getDaysUntilDate(appointment.AppointmentDate);
+                  const isServiceUrgent =
+                    daysUntilService !== null &&
+                    daysUntilService >= 0 &&
+                    daysUntilService <= 3 &&
+                    appointment.Status !== 'Completed';
                   
                   return (
                     <div
@@ -304,6 +322,19 @@ const AppointmentContent = () => {
                               </span>
                             </div>
                           )}
+
+                          {isServiceUrgent && (
+                            <div className="mt-2 inline-flex items-center px-2 py-1 rounded-md bg-red-50 text-red-700 text-xs font-medium">
+                              <AlertTriangle className="w-4 h-4 mr-1" />
+                              <span>
+                                {daysUntilService === 0
+                                  ? 'Main service is today'
+                                  : daysUntilService === 1
+                                  ? 'Main service is in 1 day'
+                                  : `Main service is in ${daysUntilService} days`}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -342,15 +373,33 @@ const AppointmentContent = () => {
 
       {/* Schedule Details Modal */}
       {showScheduleModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/20 backdrop-blur-sm">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-xl max-h-[80vh] overflow-y-auto p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Sub-service Schedule Details</h2>
                 {scheduleDetails && (
-                  <p className="mt-1 text-sm text-gray-600">
-                    {scheduleDetails.serviceName} at {scheduleDetails.churchName}
-                  </p>
+                  <>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {scheduleDetails.serviceName} at {scheduleDetails.churchName}
+                    </p>
+                    {(() => {
+                      const days = scheduleDetails.appointmentDate ? getDaysUntilDate(scheduleDetails.appointmentDate) : null;
+                      if (days === null || days < 0 || days > 3) return null;
+                      return (
+                        <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[11px] font-medium">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          <span>
+                            {days === 0
+                              ? 'Main service is today'
+                              : days === 1
+                              ? 'Main service is in 1 day'
+                              : `Main service is in ${days} days`}
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
               <button
@@ -393,15 +442,27 @@ const AppointmentContent = () => {
                       const schedule = sub.appointment_schedule;
                       let scheduleDate = 'Not scheduled yet';
                       let scheduleTime = '';
+                      let isUrgent = false;
+                      let daysUntil = null;
 
                       if (schedule && schedule.date) {
                         const dateObj = new Date(schedule.date + 'T00:00:00');
                         if (!isNaN(dateObj.getTime())) {
+                          // Format display date
                           scheduleDate = dateObj.toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
                           });
+
+                          // Urgency: within next 3 days and not yet completed
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const diffMs = dateObj.getTime() - today.getTime();
+                          daysUntil = Math.round(diffMs / (1000 * 60 * 60 * 24));
+                          if (!sub.isCompleted && daysUntil >= 0 && daysUntil <= 3) {
+                            isUrgent = true;
+                          }
                         }
                         if (schedule.start_time && schedule.end_time) {
                           scheduleTime = `${formatTime(schedule.start_time)} - ${formatTime(schedule.end_time)}`;
@@ -421,6 +482,19 @@ const AppointmentContent = () => {
                                 <span>{scheduleDate}</span>
                                 {scheduleTime && <span>{' • '}{scheduleTime}</span>}
                               </div>
+
+                              {isUrgent && (
+                                <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[11px] font-medium">
+                                  <AlertTriangle className="w-3 h-3 mr-1" />
+                                  <span>
+                                    {daysUntil === 0
+                                      ? 'Happening today'
+                                      : daysUntil === 1
+                                      ? 'Happening in 1 day'
+                                      : `Happening in ${daysUntil} days`}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                             <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${badgeClasses}`}>
                               {sub.isCompleted ? 'Completed' : 'Pending'}
