@@ -204,7 +204,7 @@ const ChurchRegistrationPage = () => {
     
     // If province changes, fetch cities for that province
     if (name === "Province") {
-      const selectedProvince = provinces.find(p => p.name === value);
+      const selectedProvince = provinces.find(p => p.name === newValue);
       if (selectedProvince) {
         try {
           const response = await axios.get(`/api/provinces/${selectedProvince.id}/cities`);
@@ -222,12 +222,6 @@ const ChurchRegistrationPage = () => {
       ...prev,
       [name]: newValue,
     }));
-  };
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
 
     // Clear errors for this field
     if (errors[name]) {
