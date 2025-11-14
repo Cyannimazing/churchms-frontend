@@ -5,6 +5,26 @@ import axios from "@/lib/axios";
 import DataLoading from "@/components/DataLoading";
 import Button from "../Button";
 
+const formatDuration = (months) => {
+  const totalMonths = Number(months) || 0;
+  const years = Math.floor(totalMonths / 12);
+  const remainingMonths = totalMonths % 12;
+
+  const parts = [];
+  if (years > 0) {
+    parts.push(`${years} year${years > 1 ? "s" : ""}`);
+  }
+  if (remainingMonths > 0) {
+    parts.push(`${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`);
+  }
+
+  if (parts.length === 0) {
+    return "0 month";
+  }
+
+  return parts.join(" and ");
+};
+
 const PricingSection = ({ onPlanSelect }) => {
   const [plans, setPlans] = useState([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
@@ -80,8 +100,7 @@ const PricingSection = ({ onPlanSelect }) => {
                   ₱{plan.Price}
                 </span>
                 <span className="ml-1 text-sm sm:text-base md:text-lg font-normal text-gray-600">
-                  /{plan.DurationInMonths} month
-                  {plan.DurationInMonths !== 1 ? "s" : ""}
+                  /{formatDuration(plan.DurationInMonths)}
                 </span>
               </div>
               <h5 className="mb-2 text-base sm:text-lg md:text-xl font-bold text-gray-900 text-center">
@@ -91,6 +110,7 @@ const PricingSection = ({ onPlanSelect }) => {
                 {plan.Description || "Test plan for church owners"}
               </p>
               <ul role="list" className="space-y-3 sm:space-y-4 my-5 sm:my-6">
+                {/* Appointment & services */}
                 <li className="flex items-center">
                   <svg
                     className="shrink-0 w-4 h-4 sm:w-5 sm:h-5 text-green-500"
@@ -102,7 +122,7 @@ const PricingSection = ({ onPlanSelect }) => {
                     <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
                   </svg>
                   <span className="text-sm sm:text-base font-normal leading-tight text-gray-900 ml-2 sm:ml-3">
-                    All components included
+                    Online appointment requests and approvals (baptism, weddings, etc.)
                   </span>
                 </li>
                 <li className="flex items-center">
@@ -116,7 +136,23 @@ const PricingSection = ({ onPlanSelect }) => {
                     <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
                   </svg>
                   <span className="text-sm sm:text-base font-normal leading-tight text-gray-900 ml-2 sm:ml-3">
-                    Advanced dashboard
+                    Service and schedule management for church activities
+                  </span>
+                </li>
+
+                {/* Members & applications */}
+                <li className="flex items-center">
+                  <svg
+                    className="shrink-0 w-4 h-4 sm:w-5 sm:h-5 text-green-500"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                  </svg>
+                  <span className="text-sm sm:text-base font-normal leading-tight text-gray-900 ml-2 sm:ml-3">
+                    Member applications review and onboarding
                   </span>
                 </li>
                 <li className="flex items-center">
@@ -130,7 +166,67 @@ const PricingSection = ({ onPlanSelect }) => {
                     <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
                   </svg>
                   <span className="text-sm sm:text-base font-normal leading-tight text-gray-900 ml-2 sm:ml-3">
-                    Max Churches Supported: {plan.MaxChurchesAllowed}
+                    Member directory with status tracking and PDF export
+                  </span>
+                </li>
+
+                {/* Staff, roles, certificates, and finances */}
+                <li className="flex items-center">
+                  <svg
+                    className="shrink-0 w-4 h-4 sm:w-5 sm:h-5 text-green-500"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                  </svg>
+                  <span className="text-sm sm:text-base font-normal leading-tight text-gray-900 ml-2 sm:ml-3">
+                    Staff and role management with granular permissions
+                  </span>
+                </li>
+                <li className="flex items-center">
+                  <svg
+                    className="shrink-0 w-4 h-4 sm:w-5 sm:h-5 text-green-500"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                  </svg>
+                  <span className="text-sm sm:text-base font-normal leading-tight text-gray-900 ml-2 sm:ml-3">
+                    Digital certificate generation and configuration
+                  </span>
+                </li>
+                <li className="flex items-center">
+                  <svg
+                    className="shrink-0 w-4 h-4 sm:w-5 sm:h-5 text-green-500"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                  </svg>
+                  <span className="text-sm sm:text-base font-normal leading-tight text-gray-900 ml-2 sm:ml-3">
+                    Transaction records, fee setup, and refund handling
+                  </span>
+                </li>
+
+                {/* Only difference between plans: how many churches */}
+                <li className="flex items-center">
+                  <svg
+                    className="shrink-0 w-4 h-4 sm:w-5 sm:h-5 text-green-500"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                  </svg>
+                  <span className="text-sm sm:text-base font-normal leading-tight text-gray-900 ml-2 sm:ml-3">
+                    Multi-church support: manage up to {plan.MaxChurchesAllowed} church{plan.MaxChurchesAllowed !== 1 ? 'es' : ''}
                   </span>
                 </li>
               </ul>
