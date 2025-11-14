@@ -539,7 +539,29 @@ const FormRenderer = ({ formConfiguration, formData = {}, updateField, onFormDat
                 {subService.description && (
                   <p className="text-xs text-gray-600 mt-1">{subService.description}</p>
                 )}
-                <span className="text-xs text-blue-600">Required</span>
+
+                {/* Appointment-specific schedule (only present when Approved/Completed) */}
+                {subService.appointment_schedule && subService.appointment_schedule.date && (
+                  <p className="text-xs text-gray-700 mt-1">
+                    <span className="font-semibold">Schedule:</span>{" "}
+                    {new Date(subService.appointment_schedule.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                    {subService.appointment_schedule.start_time && subService.appointment_schedule.end_time && (
+                      <>
+                        {" "}-{" "}
+                        {formatTime12Hour(subService.appointment_schedule.start_time)}
+                        {" "}to{" "}
+                        {formatTime12Hour(subService.appointment_schedule.end_time)}
+                      </>
+                    )}
+                  </p>
+                )}
+
+                <span className="text-xs text-blue-600 mt-1 inline-block">Required</span>
                 
                 {/* Sub-service Requirements */}
                 {subService.requirements && subService.requirements.length > 0 && (
@@ -593,5 +615,16 @@ const FormRenderer = ({ formConfiguration, formData = {}, updateField, onFormDat
     </div>
   )
 }
+
+// Helper: convert HH:MM or HH:MM:SS to 12-hour time
+const formatTime12Hour = (time) => {
+  if (!time) return '';
+  const [hourStr, minuteStr] = time.split(':');
+  const hour = parseInt(hourStr, 10);
+  const minutes = minuteStr ?? '00';
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minutes} ${ampm}`;
+};
 
 export default FormRenderer

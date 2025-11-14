@@ -13,6 +13,7 @@ import CertificateGenerator from "@/components/CertificateGenerator.jsx";
 import CertificateTypeModal from "@/components/CertificateTypeModal.jsx";
 import ConfirmDialog from "@/components/ConfirmDialog.jsx";
 import Alert from "@/components/Alert";
+import SubServiceScheduleModal from "@/components/SubServiceScheduleModal.jsx";
 
 // Warning Block Component
 const WarningBlock = ({ type, title, description, count, onShow, onClear, isActive }) => {
@@ -131,6 +132,10 @@ const AppointmentPage = () => {
   
   // Sub-service completion state
   const [allSubServicesCompleted, setAllSubServicesCompleted] = useState(true);
+
+  // Sub-service schedule picking state (when approving)
+  const [showSubServiceScheduleModal, setShowSubServiceScheduleModal] = useState(false);
+  const [pendingApprovalAppointmentId, setPendingApprovalAppointmentId] = useState(null);
   
   // Auto-complete state
   const [showAutoCompleteModal, setShowAutoCompleteModal] = useState(false);
@@ -633,12 +638,15 @@ const AppointmentPage = () => {
     setAppointmentDetails(null);
   };
 
-  const handleUpdateAppointmentStatus = async (appointmentId, status) => {
+  const handleUpdateAppointmentStatus = async (appointmentId, status, subServiceAppointments = null) => {
     setIsUpdatingStatus(true);
     
     try {
       await axios.put(`/api/appointments/${appointmentId}/status`, {
-        status: status
+        status: status,
+        ...(subServiceAppointments && subServiceAppointments.length > 0
+          ? { sub_service_appointments: subServiceAppointments }
+          : {}),
       });
       
       // Update local state
@@ -672,6 +680,20 @@ const AppointmentPage = () => {
   const handleConfirmAction = () => {
     if (confirmAction) {
       const { appointmentId, status } = confirmAction;
+
+      // If approving, and the appointment has sub-services, open the sub-service schedule modal instead
+      if (
+        status === 'Approved' &&
+        appointmentDetails?.formConfiguration?.sub_services &&
+        appointmentDetails.formConfiguration.sub_services.length > 0
+      ) {
+        setPendingApprovalAppointmentId(appointmentId);
+        setShowConfirmDialog(false);
+        setConfirmAction(null);
+        setShowSubServiceScheduleModal(true);
+        return;
+      }
+
       handleUpdateAppointmentStatus(appointmentId, status);
     }
     setShowConfirmDialog(false);
@@ -1730,6 +1752,32 @@ const AppointmentPage = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Sub-service schedule picking modal (on approve) */}
+      {showSubServiceScheduleModal && appointmentDetails?.formConfiguration?.sub_services && (
+        <SubServiceScheduleModal
+          isOpen={showSubServiceScheduleModal}
+          onClose={() => {
+            setShowSubServiceScheduleModal(false);
+            setPendingApprovalAppointmentId(null);
+          }}
+          appointmentId={pendingApprovalAppointmentId || selectedAppointment?.AppointmentID}
+          subServices={appointmentDetails.formConfiguration.sub_services.map((s) => ({
+            id: s.id,
+            name: s.name,
+            description: s.description,
+          }))}
+          onComplete={async (picks) => {
+            try {
+              const targetId = pendingApprovalAppointmentId || selectedAppointment?.AppointmentID;
+              await handleUpdateAppointmentStatus(targetId, 'Approved', picks || []);
+            } finally {
+              setShowSubServiceScheduleModal(false);
+              setPendingApprovalAppointmentId(null);
+            }
+          }}
+        />
       )}
 
       {/* Cancellation Modal */}
