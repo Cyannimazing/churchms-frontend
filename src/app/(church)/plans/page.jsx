@@ -8,6 +8,26 @@ import Label from "@/components/Label.jsx";
 import Link from "next/link";
 import DataLoading from "@/components/DataLoading";
 
+const formatDuration = (months) => {
+  const totalMonths = Number(months) || 0;
+  const years = Math.floor(totalMonths / 12);
+  const remainingMonths = totalMonths % 12;
+
+  const parts = [];
+  if (years > 0) {
+    parts.push(`${years} year${years > 1 ? "s" : ""}`);
+  }
+  if (remainingMonths > 0) {
+    parts.push(`${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`);
+  }
+
+  if (parts.length === 0) {
+    return "0 month";
+  }
+
+  return parts.join(" and ");
+};
+
 const SubscriptionPlans = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -180,7 +200,7 @@ const SubscriptionPlans = () => {
                         ₱{plan.Price}
                       </span>
                       <span className="text-gray-600 ml-1">
-                        /{plan.DurationInMonths} month{plan.DurationInMonths !== 1 ? "s" : ""}
+                        /{formatDuration(plan.DurationInMonths)}
                       </span>
                     </div>
                     <p className="text-gray-600">
@@ -192,19 +212,19 @@ const SubscriptionPlans = () => {
                       <svg className="w-4 h-4 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
-                      All components included
+                      Appointment, service, and schedule management
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <svg className="w-4 h-4 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
-                      Advanced dashboard access
+                      Member directory, applications, and transaction tracking
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <svg className="w-4 h-4 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
-                      Support for {plan.MaxChurchesAllowed} church{plan.MaxChurchesAllowed !== 1 ? 'es' : ''}
+                      Multi-church support: manage up to {plan.MaxChurchesAllowed} church{plan.MaxChurchesAllowed !== 1 ? 'es' : ''}
                     </div>
                   </div>
                   <Button
@@ -263,7 +283,7 @@ const SubscriptionPlans = () => {
                             {selectedPlan.PlanName || "Unnamed Plan"}
                           </p>
                           <p className="text-sm text-gray-600">
-                            {selectedPlan.DurationInMonths || 0} month{(selectedPlan.DurationInMonths || 0) !== 1 ? "s" : ""} subscription
+                            {formatDuration(selectedPlan.DurationInMonths || 0)} subscription
                           </p>
                         </div>
                         <div className="text-right">
