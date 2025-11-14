@@ -453,6 +453,41 @@ const FormRenderer = ({ formConfiguration, formData = {}, updateField, onFormDat
 
   return (
     <div className="w-full">
+      {/* Requirements Section */}
+      {formConfiguration.requirements && formConfiguration.requirements.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Requirements</h4>
+          <div className="space-y-3">
+            {formConfiguration.requirements.map((req, index) => (
+              <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border">
+                <span className={`inline-block w-2 h-2 rounded-full mt-2 ${req.needed ? 'bg-red-500' : 'bg-blue-500'}`}></span>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-700 font-medium">{req.description}</p>
+                  <span className={`text-xs ${req.needed ? 'text-red-600' : 'text-blue-600'}`}>
+                    {req.needed ? 'Needed' : 'Optional'}
+                  </span>
+                </div>
+                {req.needed && (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`requirement-${req.id}-${index}`}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                      checked={submissionStatuses[`req_${req.id}`] || false}
+                      disabled={isUpdatingSubmission[`req_${req.id}`] || false}
+                      onChange={(e) => handleRequirementSubmissionChange(req.id, e.target.checked)}
+                    />
+                    <label htmlFor={`requirement-${req.id}-${index}`} className="text-sm text-gray-600">
+                      {isUpdatingSubmission[`req_${req.id}`] ? 'Updating...' : 'Submitted'}
+                    </label>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Render exactly like form builder - all elements with absolute positioning */}
       <div
         className="relative overflow-visible"
@@ -492,41 +527,6 @@ const FormRenderer = ({ formConfiguration, formData = {}, updateField, onFormDat
           )
         })}
       </div>
-
-      {/* Requirements Section */}
-      {formConfiguration.requirements && formConfiguration.requirements.length > 0 && (
-        <div className="mt-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Requirements</h4>
-          <div className="space-y-3">
-            {formConfiguration.requirements.map((req, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border">
-                <span className={`inline-block w-2 h-2 rounded-full mt-2 ${req.needed ? 'bg-red-500' : 'bg-blue-500'}`}></span>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-700 font-medium">{req.description}</p>
-                  <span className={`text-xs ${req.needed ? 'text-red-600' : 'text-blue-600'}`}>
-                    {req.needed ? 'Needed' : 'Optional'}
-                  </span>
-                </div>
-                {req.needed && (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`requirement-${req.id}-${index}`}
-                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                      checked={submissionStatuses[`req_${req.id}`] || false}
-                      disabled={isUpdatingSubmission[`req_${req.id}`] || false}
-                      onChange={(e) => handleRequirementSubmissionChange(req.id, e.target.checked)}
-                    />
-                    <label htmlFor={`requirement-${req.id}-${index}`} className="text-sm text-gray-600">
-                      {isUpdatingSubmission[`req_${req.id}`] ? 'Updating...' : 'Submitted'}
-                    </label>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Sub-Services as Requirements */}
       {formConfiguration.sub_services && formConfiguration.sub_services.length > 0 && (

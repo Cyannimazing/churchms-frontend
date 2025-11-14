@@ -15,6 +15,12 @@ const AppointmentContent = () => {
   const [highlightedAppointmentId, setHighlightedAppointmentId] = useState(null);
   const highlightedRef = useRef(null);
 
+  // Schedule details modal state (for sub-service schedules)
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState(null);
+  const [scheduleDetails, setScheduleDetails] = useState(null);
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -119,6 +125,33 @@ const AppointmentContent = () => {
   };
 
   const getCreatedAt = (a) => a?.created_at || a?.CreatedAt || a?.createdAt;
+
+  const handleViewScheduleDetails = async (appointment) => {
+    try {
+      setScheduleError(null);
+      setScheduleLoading(true);
+      setShowScheduleModal(true);
+      setScheduleDetails(null);
+
+      const response = await axios.get(`/api/appointments/${appointment.AppointmentID}`);
+      const data = response.data || {};
+      const subServices = data.formConfiguration?.sub_services || [];
+
+      setScheduleDetails({
+        appointmentId: data.AppointmentID,
+        serviceName: data.ServiceName,
+        churchName: data.ChurchName,
+        appointmentDate: data.AppointmentDate,
+        subServices,
+      });
+    } catch (err) {
+      console.error('Error loading schedule details:', err);
+      const message = err.response?.data?.error || err.response?.data?.message || 'Failed to load schedule details.';
+      setScheduleError(message);
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
 
   const isExpiringSoon = (appointment) => {
     if (appointment.Status !== 'Pending') return false;
@@ -273,6 +306,18 @@ const AppointmentContent = () => {
                           )}
                         </div>
                       </div>
+
+                      {/* Actions */}
+                      {(appointment.Status === 'Approved' || appointment.Status === 'Completed') && (
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            onClick={() => handleViewScheduleDetails(appointment)}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                          >
+                            View Schedule details
+                          </button>
+                        </div>
+                      )}
                       
                       {appointment.ServiceDescription && (
                         <div className="mb-4">
@@ -294,6 +339,103 @@ const AppointmentContent = () => {
           </div>
         </div>
       </div>
+
+      {/* Schedule Details Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-xl max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Sub-service Schedule Details</h2>
+                {scheduleDetails && (
+                  <p className="mt-1 text-sm text-gray-600">
+                    {scheduleDetails.serviceName} at {scheduleDetails.churchName}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  setScheduleDetails(null);
+                  setScheduleError(null);
+                }}
+                className="p-1 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {scheduleLoading && (
+              <div className="flex items-center justify-center py-6">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-sm text-gray-600">Loading schedule...</span>
+              </div>
+            )}
+
+            {!scheduleLoading && scheduleError && (
+              <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                {scheduleError}
+              </div>
+            )}
+
+            {!scheduleLoading && !scheduleError && scheduleDetails && (
+              <div className="space-y-4">
+                {(!scheduleDetails.subServices || scheduleDetails.subServices.length === 0) && (
+                  <p className="text-sm text-gray-600">No sub-services found for this appointment.</p>
+                )}
+
+                {scheduleDetails.subServices && scheduleDetails.subServices.length > 0 && (
+                  <div className="space-y-3">
+                    {scheduleDetails.subServices.map((sub) => {
+                      const badgeClasses = sub.isCompleted
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800';
+                      const schedule = sub.appointment_schedule;
+                      let scheduleDate = 'Not scheduled yet';
+                      let scheduleTime = '';
+
+                      if (schedule && schedule.date) {
+                        const dateObj = new Date(schedule.date + 'T00:00:00');
+                        if (!isNaN(dateObj.getTime())) {
+                          scheduleDate = dateObj.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          });
+                        }
+                        if (schedule.start_time && schedule.end_time) {
+                          scheduleTime = `${formatTime(schedule.start_time)} - ${formatTime(schedule.end_time)}`;
+                        }
+                      }
+
+                      return (
+                        <div key={sub.id} className="border border-gray-200 rounded-md p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h3 className="text-sm font-medium text-gray-900">{sub.name}</h3>
+                              {sub.description && (
+                                <p className="mt-0.5 text-xs text-gray-600">{sub.description}</p>
+                              )}
+                              <div className="mt-2 text-xs text-gray-700">
+                                <span className="font-medium">Schedule:</span>{' '}
+                                <span>{scheduleDate}</span>
+                                {scheduleTime && <span>{' • '}{scheduleTime}</span>}
+                              </div>
+                            </div>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${badgeClasses}`}>
+                              {sub.isCompleted ? 'Completed' : 'Pending'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -243,15 +243,6 @@ export default function NotificationsPage() {
                                         <p className="text-xs text-gray-600 mt-1">{subService.description}</p>
                                       )}
                                     </div>
-                                    {subService.is_completed !== undefined && (
-                                      <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full ${
-                                        subService.is_completed
-                                          ? 'bg-green-100 text-green-800'
-                                          : 'bg-yellow-100 text-yellow-800'
-                                      }`}>
-                                        {subService.is_completed ? 'Completed' : 'Pending'}
-                                      </span>
-                                    )}
                                   </div>
                                   
                                   {/* Schedules */}
