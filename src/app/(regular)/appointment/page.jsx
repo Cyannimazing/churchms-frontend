@@ -5,6 +5,7 @@ import axios from "@/lib/axios";
 import { Calendar, Clock, MapPin, FileText, AlertTriangle, X } from "lucide-react";
 import { useAuth } from "@/hooks/auth.jsx";
 import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/Button.jsx";
 
 const AppointmentContent = () => {
   const { user } = useAuth({ middleware: "auth" });
@@ -443,12 +444,13 @@ const AppointmentContent = () => {
 
                         {(appointment.Status === 'Approved' || appointment.Status === 'Completed') && (
                           <div className="ml-6 flex items-center">
-                            <button
+                            <Button
+                              variant="outline"
                               onClick={() => handleViewScheduleDetails(appointment)}
-                              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full border border-blue-600 text-blue-600 bg-white hover:bg-blue-50 shadow-sm transition-colors cursor-pointer"
+                              className="text-sm px-4 py-2"
                             >
                               View Schedule details
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>

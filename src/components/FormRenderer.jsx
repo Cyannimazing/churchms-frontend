@@ -488,6 +488,94 @@ const FormRenderer = ({ formConfiguration, formData = {}, updateField, onFormDat
         </div>
       )}
 
+      {/* Sub-Services as Requirements */}
+      {formConfiguration.sub_services && formConfiguration.sub_services.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Sub-service Requirements</h4>
+          <div className="space-y-3">
+            {formConfiguration.sub_services.map((subService, index) => (
+              <div key={index} className="flex items-start space-x-3 p-4 border border-gray-300 rounded-lg bg-white">
+                <span className="inline-block w-3 h-3 rounded-full bg-blue-500 mt-1.5"></span>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-900">{subService.name}</p>
+                  {subService.description && (
+                    <p className="text-xs text-gray-600 mt-1">{subService.description}</p>
+                  )}
+
+                  {/* Appointment-specific schedule (only present when Approved/Completed) */}
+                  {subService.appointment_schedule && subService.appointment_schedule.date && (
+                    <p className="text-xs text-gray-700 mt-1">
+                      <span className="font-semibold">Schedule:</span>{" "}
+                      {new Date(subService.appointment_schedule.date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                      {subService.appointment_schedule.start_time && subService.appointment_schedule.end_time && (
+                        <>
+                          {" "}-{" "}
+                          {formatTime12Hour(subService.appointment_schedule.start_time)}
+                          {" "}to{" "}
+                          {formatTime12Hour(subService.appointment_schedule.end_time)}
+                        </>
+                      )}
+                    </p>
+                  )}
+
+                  <span className="text-xs text-blue-600 mt-1 inline-block">Required</span>
+                  
+                  {/* Sub-service Requirements */}
+                  {subService.requirements && subService.requirements.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {subService.requirements.map((req, reqIndex) => (
+                        <div key={reqIndex} className="flex items-start space-x-3 p-2 bg-gray-50 rounded border ml-6">
+                          <span className={`inline-block w-2 h-2 rounded-full mt-1.5 ${req.needed ? 'bg-orange-500' : 'bg-blue-500'}`}></span>
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-700">{req.description}</p>
+                            <span className={`text-xs ${req.needed ? 'text-orange-600' : 'text-blue-600'}`}>
+                              {req.needed ? 'Needed' : 'Optional'}
+                            </span>
+                          </div>
+                          {req.needed && (
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`subreq-${req.id}-${reqIndex}`}
+                                className="h-3 w-3 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                checked={submissionStatuses[`subreq_${req.id}`] || false}
+                                disabled={isUpdatingSubmission[`subreq_${req.id}`] || false}
+                                onChange={(e) => handleSubServiceRequirementSubmissionChange(req.id, e.target.checked)}
+                              />
+                              <label htmlFor={`subreq-${req.id}-${reqIndex}`} className="text-xs text-gray-600">
+                                {isUpdatingSubmission[`subreq_${req.id}`] ? 'Updating...' : 'Submitted'}
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`subservice-${subService.id}-${index}`}
+                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    checked={submissionStatuses[`sub_${subService.id}`] || false}
+                    disabled={isUpdatingSubmission[`sub_${subService.id}`] || false}
+                    onChange={(e) => handleSubServiceCompletionChange(subService.id, e.target.checked)}
+                  />
+                  <label htmlFor={`subservice-${subService.id}-${index}`} className="text-sm text-gray-600">
+                    {isUpdatingSubmission[`sub_${subService.id}`] ? 'Updating...' : 'Completed'}
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Render exactly like form builder - all elements with absolute positioning */}
       <div
         className="relative overflow-visible"
@@ -527,91 +615,6 @@ const FormRenderer = ({ formConfiguration, formData = {}, updateField, onFormDat
           )
         })}
       </div>
-
-      {/* Sub-Services as Requirements */}
-      {formConfiguration.sub_services && formConfiguration.sub_services.length > 0 && (
-        <>
-          {formConfiguration.sub_services.map((subService, index) => (
-            <div key={index} className="flex items-start space-x-3 p-4 border border-gray-300 rounded-lg bg-white mt-3">
-              <span className="inline-block w-3 h-3 rounded-full bg-blue-500 mt-1.5"></span>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">{subService.name}</p>
-                {subService.description && (
-                  <p className="text-xs text-gray-600 mt-1">{subService.description}</p>
-                )}
-
-                {/* Appointment-specific schedule (only present when Approved/Completed) */}
-                {subService.appointment_schedule && subService.appointment_schedule.date && (
-                  <p className="text-xs text-gray-700 mt-1">
-                    <span className="font-semibold">Schedule:</span>{" "}
-                    {new Date(subService.appointment_schedule.date).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                    {subService.appointment_schedule.start_time && subService.appointment_schedule.end_time && (
-                      <>
-                        {" "}-{" "}
-                        {formatTime12Hour(subService.appointment_schedule.start_time)}
-                        {" "}to{" "}
-                        {formatTime12Hour(subService.appointment_schedule.end_time)}
-                      </>
-                    )}
-                  </p>
-                )}
-
-                <span className="text-xs text-blue-600 mt-1 inline-block">Required</span>
-                
-                {/* Sub-service Requirements */}
-                {subService.requirements && subService.requirements.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {subService.requirements.map((req, reqIndex) => (
-                      <div key={reqIndex} className="flex items-start space-x-3 p-2 bg-gray-50 rounded border ml-6">
-                        <span className={`inline-block w-2 h-2 rounded-full mt-1.5 ${req.needed ? 'bg-orange-500' : 'bg-blue-500'}`}></span>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-700">{req.description}</p>
-                          <span className={`text-xs ${req.needed ? 'text-orange-600' : 'text-blue-600'}`}>
-                            {req.needed ? 'Needed' : 'Optional'}
-                          </span>
-                        </div>
-                        {req.needed && (
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`subreq-${req.id}-${reqIndex}`}
-                              className="h-3 w-3 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                              checked={submissionStatuses[`subreq_${req.id}`] || false}
-                              disabled={isUpdatingSubmission[`subreq_${req.id}`] || false}
-                              onChange={(e) => handleSubServiceRequirementSubmissionChange(req.id, e.target.checked)}
-                            />
-                            <label htmlFor={`subreq-${req.id}-${reqIndex}`} className="text-xs text-gray-600">
-                              {isUpdatingSubmission[`subreq_${req.id}`] ? 'Updating...' : 'Submitted'}
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id={`subservice-${subService.id}-${index}`}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                  checked={submissionStatuses[`sub_${subService.id}`] || false}
-                  disabled={isUpdatingSubmission[`sub_${subService.id}`] || false}
-                  onChange={(e) => handleSubServiceCompletionChange(subService.id, e.target.checked)}
-                />
-                <label htmlFor={`subservice-${subService.id}-${index}`} className="text-sm text-gray-600">
-                  {isUpdatingSubmission[`sub_${subService.id}`] ? 'Updating...' : 'Completed'}
-                </label>
-              </div>
-            </div>
-          ))}
-        </>
-      )}
     </div>
   )
 }
