@@ -1852,32 +1852,30 @@ const SacramentApplicationModal = ({ isOpen, onClose, church }) => {
               ) : (
 <div>
                   {/* Requirements */}
-                  {formConfig.requirements && formConfig.requirements.length > 0 ? (
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-6">
-                      <h4 className="font-medium text-yellow-800 mb-3">Requirements for this Sacrament</h4>
-                      <ul className="list-disc list-inside space-y-2">
-                        {formConfig.requirements.map((req, index) => (
-                          <li key={index} className={`text-sm ${req.is_needed ? 'text-yellow-800' : 'text-yellow-700'}`}>
-                            {req.description}
-                            {req.is_needed && <span className="font-medium"> (Required)</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 mb-6">
-                      <p className="text-gray-600">No specific requirements have been set for this sacrament.</p>
+                  {formConfig.requirements && formConfig.requirements.length > 0 && (
+                    <div className="mb-6">
+                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 className="font-medium text-yellow-800 mb-3">Requirements for this Sacrament</h4>
+                        <ul className="list-disc list-inside space-y-2">
+                          {formConfig.requirements.map((req, index) => (
+                            <li key={index} className={`text-sm ${req.is_needed ? 'text-yellow-800' : 'text-yellow-700'}`}>
+                              {req.description}
+                              {req.is_needed && <span className="font-medium"> (Required)</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                   )}
 
                   {/* Sub-Services (Additional Requirements/Steps) */}
                   {formConfig.sub_services && formConfig.sub_services.length > 0 && (
                     <div className="mb-6">
-                      <h4 className="font-medium text-gray-900 mb-3">Additional Requirements & Steps</h4>
-                      <div className="space-y-4">
-                        {formConfig.sub_services.map((subService, subIndex) => (
-                          <div key={subIndex} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div className="flex items-start gap-3">
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 className="font-medium text-blue-900 mb-3">Additional Requirements & Steps</h4>
+                        <div className="space-y-4">
+                          {formConfig.sub_services.map((subService, subIndex) => (
+                            <div key={subIndex} className="flex items-start gap-3">
                               <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-medium mt-0.5">
                                 {subIndex + 1}
                               </div>
@@ -1901,8 +1899,8 @@ const SacramentApplicationModal = ({ isOpen, onClose, church }) => {
                                 )}
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
