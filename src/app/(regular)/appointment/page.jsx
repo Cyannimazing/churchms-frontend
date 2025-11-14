@@ -21,6 +21,10 @@ const AppointmentContent = () => {
   const [scheduleError, setScheduleError] = useState(null);
   const [scheduleDetails, setScheduleDetails] = useState(null);
 
+  // Urgency info derived from sub-service schedules per appointment (by id)
+  // Shape: { [appointmentId]: { hasSubServiceUrgency, nearestSubServiceName?, daysUntilSubService? } }
+  const [appointmentUrgency, setAppointmentUrgency] = useState({});
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
@@ -165,6 +169,69 @@ const AppointmentContent = () => {
     }
   };
 
+  // Preload sub-service urgency for approved/completed appointments so cards can show it
+  useEffect(() => {
+    const fetchUrgencyForAppointments = async () => {
+      const idsToFetch = appointments
+        .filter((apt) =>
+          (apt.Status === 'Approved' || apt.Status === 'Completed') &&
+          !appointmentUrgency[apt.AppointmentID]
+        )
+        .map((apt) => apt.AppointmentID);
+
+      if (idsToFetch.length === 0) return;
+
+      try {
+        const responses = await Promise.all(
+          idsToFetch.map((id) =>
+            axios.get(`/api/appointments/${id}`).then((res) => ({ id, data: res.data || {} }))
+          )
+        );
+
+        setAppointmentUrgency((prev) => {
+          const updated = { ...prev };
+
+          responses.forEach(({ id, data }) => {
+            const subServices = data.formConfiguration?.sub_services || [];
+            let nearest = null;
+
+            subServices.forEach((sub) => {
+              const schedule = sub.appointment_schedule;
+              if (!schedule || !schedule.date || sub.isCompleted) return;
+              const daysUntil = getDaysUntilDate(schedule.date);
+              if (daysUntil === null || daysUntil < 0 || daysUntil > 3) return;
+
+              if (!nearest || daysUntil < nearest.daysUntil) {
+                nearest = {
+                  name: sub.name,
+                  daysUntil,
+                };
+              }
+            });
+
+            if (nearest) {
+              updated[id] = {
+                hasSubServiceUrgency: true,
+                nearestSubServiceName: nearest.name,
+                daysUntilSubService: nearest.daysUntil,
+              };
+            } else if (!updated[id]) {
+              updated[id] = { hasSubServiceUrgency: false };
+            }
+          });
+
+          return updated;
+        });
+      } catch (err) {
+        console.error('Error loading sub-service urgency for appointments:', err);
+      }
+    };
+
+    if (appointments.length > 0) {
+      fetchUrgencyForAppointments();
+    }
+  }, [appointments, appointmentUrgency]);
+
   const isExpiringSoon = (appointment) => {
     if (appointment.Status !== 'Pending') return false;
     const hoursElapsed = getHoursElapsed(getCreatedAt(appointment));
@@ -245,6 +312,16 @@ const AppointmentContent = () => {
                     daysUntilService >= 0 &&
                     daysUntilService <= 3 &&
                     appointment.Status !== 'Completed';
+
+                  const urgencyInfo = appointmentUrgency[appointment.AppointmentID] || {};
+                  const hasSubServiceUrgency = urgencyInfo.hasSubServiceUrgency;
+                  const daysUntilSubService = urgencyInfo.daysUntilSubService;
+                  const nearestSubServiceName = urgencyInfo.nearestSubServiceName;
+
+                  const hasAnyUrgency =
+                    !isExpiring &&
+                    appointment.Status === 'Approved' &&
+                    (isServiceUrgent || hasSubServiceUrgency);
                   
                   return (
                     <div
@@ -253,7 +330,11 @@ const AppointmentContent = () => {
                       className={`border rounded-lg p-6 transition-colors duration-300 ${
                         highlightedAppointmentId === appointment.AppointmentID
                           ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300 animate-pulse'
-                          : (isExpiring ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-gray-300')
+                          : isExpiring
+                            ? 'border-red-300 bg-red-50'
+                            : hasAnyUrgency
+                              ? 'border-amber-300 bg-amber-50'
+                              : 'border-gray-200 hover:border-gray-300'
                       }`}>
                       {/* Expiration Warning Banner */}
                       {isExpiring && (
@@ -287,7 +368,43 @@ const AppointmentContent = () => {
                         </div>
                       )}
 
-                      <div className="flex items-start justify-between mb-4">
+                      {/* Upcoming schedule urgency banner for approved appointments */}
+                      {hasAnyUrgency && (
+                        <div className="mb-4 bg-amber-100 border border-amber-300 rounded-lg p-3">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-700 mt-0.5" />
+                            <div className="text-sm text-amber-900">
+                              <p className="font-semibold">Upcoming schedule reminder</p>
+                              {hasSubServiceUrgency && nearestSubServiceName ? (
+                                <p className="mt-0.5">
+                                  <span className="font-medium">{nearestSubServiceName}</span>{' '}
+                                  is happening in{' '}
+                                  {daysUntilSubService === 0
+                                    ? 'today'
+                                    : daysUntilSubService === 1
+                                    ? '1 day'
+                                    : `${daysUntilSubService} days`}
+                                  . Please make sure you attend and prepare any requirements.
+                                </p>
+                              ) : (
+                                isServiceUrgent && (
+                                  <p className="mt-0.5">
+                                    Main service is happening in{' '}
+                                    {daysUntilService === 0
+                                      ? 'today'
+                                      : daysUntilService === 1
+                                      ? '1 day'
+                                      : `${daysUntilService} days`}
+                                    . Please be prepared.
+                                  </p>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">
@@ -322,33 +439,19 @@ const AppointmentContent = () => {
                               </span>
                             </div>
                           )}
-
-                          {isServiceUrgent && (
-                            <div className="mt-2 inline-flex items-center px-2 py-1 rounded-md bg-red-50 text-red-700 text-xs font-medium">
-                              <AlertTriangle className="w-4 h-4 mr-1" />
-                              <span>
-                                {daysUntilService === 0
-                                  ? 'Main service is today'
-                                  : daysUntilService === 1
-                                  ? 'Main service is in 1 day'
-                                  : `Main service is in ${daysUntilService} days`}
-                              </span>
-                            </div>
-                          )}
                         </div>
+
+                        {(appointment.Status === 'Approved' || appointment.Status === 'Completed') && (
+                          <div className="ml-6 flex items-center">
+                            <button
+                              onClick={() => handleViewScheduleDetails(appointment)}
+                              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full border border-blue-600 text-blue-600 bg-white hover:bg-blue-50 shadow-sm transition-colors cursor-pointer"
+                            >
+                              View Schedule details
+                            </button>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Actions */}
-                      {(appointment.Status === 'Approved' || appointment.Status === 'Completed') && (
-                        <div className="mt-4 flex justify-end">
-                          <button
-                            onClick={() => handleViewScheduleDetails(appointment)}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-                          >
-                            View Schedule details
-                          </button>
-                        </div>
-                      )}
                       
                       {appointment.ServiceDescription && (
                         <div className="mb-4">
