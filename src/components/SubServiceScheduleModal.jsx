@@ -11,10 +11,11 @@ import InlineCalendar from "@/components/ui/InlineCalendar.jsx";
  * - isOpen: boolean
  * - onClose: () => void
  * - appointmentId: number
+ * - appointmentDate: string (ISO or 'YYYY-MM-DD HH:mm:ss')
  * - subServices: [{ id, name, description }]
  * - onComplete: (picks: [{ sub_service_id, date, start_time, end_time }]) => void
  */
-const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, subServices = [], onComplete }) => {
+const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, appointmentDate = null, subServices = [], onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentDate, setCurrentDate] = useState(""); // YYYY-MM-DD
   const [selectedTime, setSelectedTime] = useState(null); // schedule row
@@ -169,6 +170,16 @@ const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, subServices =
 
   const stepLabel = `${currentIndex + 1} of ${subServices.length}`;
 
+  // Normalize main appointment date to a date-only cutoff (sub-services must be before this day)
+  let appointmentCutoffDate = null;
+  if (appointmentDate) {
+    const raw = typeof appointmentDate === 'string' ? appointmentDate.replace(' ', 'T') : appointmentDate;
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      appointmentCutoffDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
@@ -217,6 +228,14 @@ const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, subServices =
                       onChange={setCurrentDate}
                       isDateAllowed={(date) => {
                         if (!schedules || schedules.length === 0) return true;
+
+                        // Enforce that sub-services happen before the main appointment date
+                        if (appointmentCutoffDate) {
+                          const candidate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                          if (candidate >= appointmentCutoffDate) {
+                            return false;
+                          }
+                        }
 
                         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                         const weekdayName = dayNames[date.getDay()];

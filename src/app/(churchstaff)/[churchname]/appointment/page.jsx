@@ -705,10 +705,28 @@ const AppointmentPage = () => {
     setConfirmAction(null);
   };
 
-  // Show confirm dialog for status updates
+  // Show confirm dialog for status updates (except approve-with-sub-services case)
   const showStatusConfirmDialog = (appointmentId, status) => {
     setConfirmAction({ appointmentId, status });
     setShowConfirmDialog(true);
+  };
+
+  // When approving from the Review modal, open the sub-service schedule modal first
+  const handleApproveFromReview = () => {
+    if (!selectedAppointment?.AppointmentID) return;
+
+    const hasSubServices =
+      appointmentDetails?.formConfiguration?.sub_services &&
+      appointmentDetails.formConfiguration.sub_services.length > 0;
+
+    if (hasSubServices) {
+      setPendingApprovalAppointmentId(selectedAppointment.AppointmentID);
+      setShowSubServiceScheduleModal(true);
+      return;
+    }
+
+    // Fallback: if no sub-services, use normal confirm dialog
+    showStatusConfirmDialog(selectedAppointment.AppointmentID, 'Approved');
   };
   
   // Handle appointment cancellation with custom category and note
@@ -1689,7 +1707,7 @@ const AppointmentPage = () => {
                         {isUpdatingStatus ? 'Updating...' : 'Cancel Appointment'}
                       </Button>
                       <Button
-                        onClick={() => showStatusConfirmDialog(selectedAppointment.AppointmentID, 'Approved')}
+                        onClick={handleApproveFromReview}
                         className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300"
                         disabled={isUpdatingStatus || !canApproveAppointment || !canAcceptApplication}
                         title={
@@ -1763,6 +1781,7 @@ const AppointmentPage = () => {
             setPendingApprovalAppointmentId(null);
           }}
           appointmentId={pendingApprovalAppointmentId || selectedAppointment?.AppointmentID}
+          appointmentDate={selectedAppointment?.AppointmentDate}
           subServices={appointmentDetails.formConfiguration.sub_services.map((s) => ({
             id: s.id,
             name: s.name,
