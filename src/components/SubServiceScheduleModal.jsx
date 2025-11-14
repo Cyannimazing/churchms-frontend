@@ -148,10 +148,22 @@ const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, subServices =
     setError("");
   };
 
+  const formatTime12Hour = (time) => {
+    if (!time) return "";
+    const [hourStr, minuteStr] = time.split(":");
+    const hour = parseInt(hourStr, 10);
+    const minutes = minuteStr ?? "00";
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
   const formatScheduleLabel = (schedule) => {
     if (!schedule) return "";
-    const start = schedule.StartTime ? schedule.StartTime.slice(0, 5) : "";
-    const end = schedule.EndTime ? schedule.EndTime.slice(0, 5) : "";
+    const rawStart = schedule.StartTime || "";
+    const rawEnd = schedule.EndTime || "";
+    const start = formatTime12Hour(rawStart.slice(0, 5));
+    const end = formatTime12Hour(rawEnd.slice(0, 5));
     return `${start} - ${end}`;
   };
 
@@ -200,7 +212,45 @@ const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, subServices =
                       <CalendarIcon className="w-4 h-4" />
                       Select specific date
                     </label>
-                    <InlineCalendar value={currentDate} onChange={setCurrentDate} />
+                    <InlineCalendar
+                      value={currentDate}
+                      onChange={setCurrentDate}
+                      isDateAllowed={(date) => {
+                        if (!schedules || schedules.length === 0) return true;
+
+                        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                        const weekdayName = dayNames[date.getDay()];
+                        const dayOfMonth = date.getDate();
+
+                        return schedules.some((s) => {
+                          const type = s.OccurrenceType || s.occurrenceType || 'weekly';
+                          const schedDay = s.DayOfWeek;
+
+                          if (type === 'weekly') {
+                            return schedDay === weekdayName;
+                          }
+
+                          if (type === 'nth_day_of_month') {
+                            if (schedDay !== weekdayName) return false;
+                            const occurrence = s.OccurrenceValue;
+
+                            if (!occurrence) return false;
+
+                            if (occurrence === -1) {
+                              // last X of month
+                              const nextWeekSameDay = dayOfMonth + 7;
+                              return new Date(date.getFullYear(), date.getMonth(), nextWeekSameDay).getMonth() !== date.getMonth();
+                            }
+
+                            const computedNth = Math.ceil(dayOfMonth / 7);
+                            return computedNth === occurrence;
+                          }
+
+                          // Fallback: allow all dates
+                          return true;
+                        });
+                      }}
+                    />
                   </div>
 
                   {/* Time slots */}
@@ -224,23 +274,6 @@ const SubServiceScheduleModal = ({ isOpen, onClose, appointmentId, subServices =
                           <div>
                             <div className="font-medium">
                               {formatScheduleLabel(schedule)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {schedule.DayOfWeek}
-                              {schedule.OccurrenceType === "nth_day_of_month" && schedule.OccurrenceValue != null && (
-                                <span className="ml-1">
-                                  (
-                                  {schedule.OccurrenceValue === -1
-                                    ? "Last"
-                                    : schedule.OccurrenceValue === 1
-                                    ? "1st"
-                                    : schedule.OccurrenceValue === 2
-                                    ? "2nd"
-                                    : schedule.OccurrenceValue === 3
-                                    ? "3rd"
-                                    : `${schedule.OccurrenceValue}th`} of month)
-                                </span>
-                              )}
                             </div>
                           </div>
                         </button>

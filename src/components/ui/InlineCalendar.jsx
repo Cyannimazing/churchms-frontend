@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const InlineCalendar = ({ value, onChange, className = "" }) => {
+const InlineCalendar = ({ value, onChange, className = "", isDateAllowed }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Initialize currentMonth based on selected value
@@ -34,9 +34,16 @@ const InlineCalendar = ({ value, onChange, className = "" }) => {
     setCurrentMonth(newMonth);
   };
 
+  const buildDateString = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const selectDate = (day) => {
     const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    const dateString = selectedDate.toISOString().split('T')[0];
+    const dateString = buildDateString(selectedDate);
     onChange(dateString);
   };
 
@@ -91,20 +98,22 @@ const InlineCalendar = ({ value, onChange, className = "" }) => {
           const isToday = isSameDay(date, today);
           const isSelected = selectedDate && isSameDay(date, selectedDate);
           const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const allowedBySchedule = typeof isDateAllowed === 'function' ? isDateAllowed(date) : true;
+          const isDisabled = isPast || !allowedBySchedule;
           
           return (
             <button
               key={day}
               type="button"
               onClick={() => selectDate(day)}
-              disabled={isPast}
+              disabled={isDisabled}
               className={`
                 p-1 h-7 text-xs rounded hover:bg-blue-50 transition-colors disabled:cursor-not-allowed disabled:text-gray-300
                 ${isSelected 
                   ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : isToday && !isPast
+                  : isToday && !isDisabled
                     ? 'bg-blue-100 text-blue-600 font-medium'
-                    : isPast
+                    : isDisabled
                       ? 'text-gray-300'
                       : 'text-gray-900 hover:bg-blue-50'
                 }
