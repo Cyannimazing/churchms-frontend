@@ -1,7 +1,6 @@
 import { Roboto } from "next/font/google";
 import "./globals.css";
 
-// Configure Roboto font
 const robotoFont = Roboto({
   subsets: ["latin"],
   display: "swap",
