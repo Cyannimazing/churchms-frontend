@@ -128,10 +128,11 @@ const TransactionRecordPage = () => {
   // Extract unique services and dates from transactions
   useEffect(() => {
     if (transactions.length > 0) {
-      // Extract unique services (exclude refunded)
+      // Extract unique services (exclude refunded), preferring metadata snapshot
       const services = transactions
-        .filter(t => t.refund_status !== 'refunded' && t.appointment?.service?.ServiceName)
-        .map(t => t.appointment.service.ServiceName)
+        .filter((t) => t.refund_status !== 'refunded')
+        .map((t) => getServiceName(t))
+        .filter((name) => !!name)
         .filter((value, index, self) => self.indexOf(value) === index)
         .sort();
       setAvailableServices(services);
@@ -143,9 +144,9 @@ const TransactionRecordPage = () => {
     if (selectedService && transactions.length > 0) {
       // Extract dates for the selected service
       const dates = transactions
-        .filter(t => 
-          t.refund_status !== 'refunded' && 
-          t.appointment?.service?.ServiceName === selectedService &&
+        .filter((t) =>
+          t.refund_status !== 'refunded' &&
+          getServiceName(t) === selectedService &&
           t.transaction_date
         )
         .map(t => {
@@ -165,11 +166,9 @@ const TransactionRecordPage = () => {
   useEffect(() => {
     let filtered = [...transactions];
     
-    // Apply service filter
+    // Apply service filter (using immutable metadata service name where available)
     if (selectedService) {
-      filtered = filtered.filter(transaction => 
-        transaction.appointment?.service?.ServiceName === selectedService
-      );
+      filtered = filtered.filter((transaction) => getServiceName(transaction) === selectedService);
     }
     
     // Apply date filter
@@ -184,9 +183,11 @@ const TransactionRecordPage = () => {
     // Apply search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(transaction => (
-        transaction.appointment?.service?.ServiceName?.toLowerCase().includes(searchLower) ||
-        transaction.user?.profile?.first_name?.toLowerCase().includes(searchLower) ||
+      filtered = filtered.filter((transaction) => {
+        const serviceName = getServiceName(transaction)?.toLowerCase() || '';
+        return (
+          serviceName.includes(searchLower) ||
+          transaction.user?.profile?.first_name?.toLowerCase().includes(searchLower) ||
         transaction.user?.profile?.last_name?.toLowerCase().includes(searchLower) ||
         transaction.user?.email?.toLowerCase().includes(searchLower) ||
         transaction.ChurchTransactionID?.toString().includes(searchLower) ||
@@ -241,7 +242,8 @@ const TransactionRecordPage = () => {
         metadata: localTransaction.metadata,
         notes: localTransaction.notes,
         service: {
-          name: localTransaction.appointment?.service?.ServiceName || 'N/A',
+          // Use immutable name stored in metadata when available
+          name: getServiceName(localTransaction) || 'N/A',
           variant: localTransaction.appointment?.sub_sacrament_service?.SubServiceName || null
         },
         user: {
@@ -434,6 +436,15 @@ const TransactionRecordPage = () => {
       return `${user.profile.first_name} ${user.profile.last_name}`;
     }
     return user.email || 'Unknown User';
+  };
+
+  // Prefer immutable service name stored in metadata; fall back to live relationship
+  const getServiceName = (transaction) => {
+    return (
+      transaction?.metadata?.service_name ||
+      transaction?.appointment?.service?.ServiceName ||
+      null
+    );
   };
 
   // Convenience fee handlers
@@ -796,7 +807,7 @@ const TransactionRecordPage = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {transaction.appointment?.service?.ServiceName || 'N/A'}
+                                  {getServiceName(transaction) || 'N/A'}
                                 </div>
                                 {transaction.appointment?.AppointmentDate && (
                                   <div className="text-sm text-gray-500">
