@@ -1418,17 +1418,6 @@ const AppointmentPage = () => {
                                       Cancel
                                     </Button>
                                   )}
-                                  {isDue && (
-                                    <Button
-                                      onClick={() => showStatusConfirmDialog(appointment.AppointmentID, 'Completed')}
-                                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 min-h-0 h-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                                      disabled={!canMarkCompleted}
-                                      title={!canMarkCompleted ? 'You do not have permission to mark appointments as completed' : ''}
-                                    >
-                                      <Check className="h-3 w-3 mr-1" />
-                                      Mark Completed
-                                    </Button>
-                                  )}
                                 </div>
                               </td>
                             </tr>
