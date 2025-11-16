@@ -405,7 +405,7 @@ const AppointmentContent = () => {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">
@@ -443,7 +443,7 @@ const AppointmentContent = () => {
                         </div>
 
                         {(appointment.Status === 'Approved' || appointment.Status === 'Completed') && (
-                          <div className="ml-6 flex items-center">
+                          <div className="mt-4 sm:mt-0 sm:ml-6 flex items-center justify-start sm:justify-end">
                             <Button
                               variant="outline"
                               onClick={() => handleViewScheduleDetails(appointment)}

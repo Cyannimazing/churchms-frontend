@@ -57,6 +57,32 @@ export const useNotifications = (user, options = {}) => {
     if (!suppressFavicon) updateFaviconBadge(count);
   };
 
+  // Resolve a churchId once so we can reuse it for filtering and Echo subscriptions.
+  // IMPORTANT: we only scope by church when a church context is explicitly provided
+  // via options (churchId or churchname). This way, global pages (e.g. regular user
+  // notifications) still see all their notifications across churches.
+  const resolveChurchId = () => {
+    if (!user) return null;
+
+    // No explicit church context -> do not scope notifications
+    if (!optChurchId && !optChurchname) return null;
+
+    if (optChurchId) return optChurchId;
+
+    if (optChurchname && Array.isArray(user.churches)) {
+      // Match using lowercase slug comparison (e.g., "holy-trinity-church" matches "Holy Trinity Church")
+      const slug = (s) => s?.toLowerCase().replace(/\s+/g, '-');
+      const match = user.churches.find(
+        (c) => slug(c.ChurchName) === optChurchname.toLowerCase()
+      );
+      if (match) return match.ChurchID;
+    }
+
+    return null;
+  };
+
+  const resolvedChurchId = resolveChurchId();
+
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     try {
@@ -240,19 +266,6 @@ export const useNotifications = (user, options = {}) => {
     });
 
     // If user is church staff/owner, also listen to church channel
-    // Resolve churchId: staff -> user.church.ChurchID; owner -> from options or churches list using churchname
-    let resolvedChurchId = null;
-    if (user.church?.ChurchID) {
-      resolvedChurchId = user.church.ChurchID;
-    } else if (optChurchId) {
-      resolvedChurchId = optChurchId;
-    } else if (optChurchname && Array.isArray(user.churches)) {
-      // Match using lowercase slug comparison (e.g., "holy-trinity-church" matches "Holy Trinity Church")
-      const slug = (s) => s?.toLowerCase().replace(/\s+/g, '-');
-      const match = user.churches.find(c => slug(c.ChurchName) === optChurchname.toLowerCase());
-      if (match) resolvedChurchId = match.ChurchID;
-    }
-
     console.log('[useNotifications] Resolved church ID:', resolvedChurchId);
     console.log('[useNotifications] User church:', user.church?.ChurchID);
     console.log('[useNotifications] Opt churchname:', optChurchname);
@@ -290,10 +303,28 @@ export const useNotifications = (user, options = {}) => {
         }
       } catch (_) {}
     };
-  }, [user, fetchNotifications, fetchUnreadCount, optChurchId, optChurchname]);
+  }, [user, fetchNotifications, fetchUnreadCount, optChurchId, optChurchname, resolvedChurchId]);
+
+  // If we have a resolvedChurchId (i.e. we're in a specific-church context),
+  // hide notifications that clearly belong to another church. We keep ones
+  // without a church identifier to avoid accidentally hiding generic alerts.
+  const filteredNotifications = resolvedChurchId
+    ? notifications.filter((n) => {
+        const d = n.data || {};
+        const notifChurchId =
+          d.church_id ||
+          d.ChurchID ||
+          d.churchId ||
+          (d.church && (d.church.ChurchID || d.church.id));
+
+        if (!notifChurchId) return true; // generic notification
+
+        return String(notifChurchId) === String(resolvedChurchId);
+      })
+    : notifications;
 
   return {
-    notifications,
+    notifications: filteredNotifications,
     unreadCount,
     loading,
     fetchNotifications,
