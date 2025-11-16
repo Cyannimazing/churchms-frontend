@@ -188,12 +188,13 @@ const TransactionRecordPage = () => {
         return (
           serviceName.includes(searchLower) ||
           transaction.user?.profile?.first_name?.toLowerCase().includes(searchLower) ||
-        transaction.user?.profile?.last_name?.toLowerCase().includes(searchLower) ||
-        transaction.user?.email?.toLowerCase().includes(searchLower) ||
-        transaction.ChurchTransactionID?.toString().includes(searchLower) ||
-        transaction.receipt_code?.toLowerCase().includes(searchLower) ||
-        transaction.paymongo_session_id?.toLowerCase().includes(searchLower)
-      ));
+          transaction.user?.profile?.last_name?.toLowerCase().includes(searchLower) ||
+          transaction.user?.email?.toLowerCase().includes(searchLower) ||
+          transaction.ChurchTransactionID?.toString().includes(searchLower) ||
+          transaction.receipt_code?.toLowerCase().includes(searchLower) ||
+          transaction.paymongo_session_id?.toLowerCase().includes(searchLower)
+        );
+      });
     }
     
     // Sort by transaction_date descending (newest first)
