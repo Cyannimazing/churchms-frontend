@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import axios from "@/lib/axios";
 import { Calendar, Clock, MapPin, FileText, AlertTriangle, X } from "lucide-react";
 import { useAuth } from "@/hooks/auth.jsx";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/Button.jsx";
+import RescheduleAppointmentModal from "@/components/RescheduleAppointmentModal.jsx";
 
 const AppointmentContent = () => {
   const { user } = useAuth({ middleware: "auth" });
@@ -16,35 +17,83 @@ const AppointmentContent = () => {
   const [highlightedAppointmentId, setHighlightedAppointmentId] = useState(null);
   const highlightedRef = useRef(null);
 
+  // Map of church slug -> whether an active reschedule fee is configured
+  const [rescheduleFeeByChurch, setRescheduleFeeByChurch] = useState({});
+
   // Schedule details modal state (for sub-service schedules)
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleError, setScheduleError] = useState(null);
   const [scheduleDetails, setScheduleDetails] = useState(null);
 
+  // Reschedule modal state
+  const [rescheduleAppointment, setRescheduleAppointment] = useState(null);
+
   // Urgency info derived from sub-service schedules per appointment (by id)
   // Shape: { [appointmentId]: { hasSubServiceUrgency, nearestSubServiceName?, daysUntilSubService? } }
   const [appointmentUrgency, setAppointmentUrgency] = useState({});
 
+  const fetchAppointments = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get('/api/appointments');
+      setAppointments(response.data.appointments);
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+      setError('Failed to load appointments');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // After appointments load, check which churches have an active reschedule fee configured.
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchRescheduleFeesForChurches = async () => {
+      if (!appointments || appointments.length === 0) return;
+
+      // Build a unique list of church slugs for these appointments.
+      const uniqueSlugs = Array.from(
+        new Set(
+          appointments
+            .map((apt) => slugifyChurchName(apt.ChurchName))
+            .filter((slug) => !!slug)
+        )
+      );
+
       try {
-        setLoading(true);
-        setError(null);
-        const response = await axios.get('/api/appointments');
-        setAppointments(response.data.appointments);
+        const entries = await Promise.all(
+          uniqueSlugs.map(async (slug) => {
+            try {
+              const resp = await axios.get(`/api/reschedule-fees/${slug}`);
+              const hasActive =
+                resp.data?.success &&
+                resp.data.reschedule_fee &&
+                resp.data.reschedule_fee.is_active;
+              return [slug, !!hasActive];
+            } catch (err) {
+              console.error('Error fetching reschedule fee for church', slug, err);
+              return [slug, false];
+            }
+          })
+        );
+
+        setRescheduleFeeByChurch(Object.fromEntries(entries));
       } catch (err) {
-        console.error('Error fetching appointments:', err);
-        setError('Failed to load appointments');
-      } finally {
-        setLoading(false);
+        console.error('Error fetching reschedule fees for appointments:', err);
+        // On error, default is no reschedule allowed (safer than allowing free reschedules).
+        setRescheduleFeeByChurch({});
       }
     };
 
+    fetchRescheduleFeesForChurches();
+  }, [appointments]);
+
+  useEffect(() => {
     if (user) {
       fetchAppointments();
     }
-  }, [user]);
+  }, [user, fetchAppointments]);
 
   // Handle highlighting from notification link
   useEffect(() => {
@@ -115,6 +164,16 @@ const AppointmentContent = () => {
     return null;
   };
 
+  // Convert a church name like "Holy Trinity Church" to the slug used in routes: "holy-trinity-church"
+  const slugifyChurchName = (name) => {
+    if (!name || typeof name !== 'string') return '';
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-');
+  };
+
   const getDaysUntilDate = (dateString) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -142,6 +201,21 @@ const AppointmentContent = () => {
   };
 
   const getCreatedAt = (a) => a?.created_at || a?.CreatedAt || a?.createdAt;
+
+  const canReschedule = (appointment) => {
+    if (!appointment) return false;
+    if (['Cancelled', 'Completed', 'Rejected'].includes(appointment.Status)) return false;
+
+    // Require that the church has configured an active reschedule fee.
+    const churchSlug = slugifyChurchName(appointment.ChurchName);
+    const hasRescheduleFee = !!rescheduleFeeByChurch[churchSlug];
+    if (!hasRescheduleFee) return false;
+
+    const daysUntil = getDaysUntilDate(appointment.AppointmentDate);
+    if (daysUntil === null) return false;
+    // Backend rule: can only reschedule up to 3 days before the appointment date.
+    return daysUntil >= 3;
+  };
 
   const handleViewScheduleDetails = async (appointment) => {
     try {
@@ -442,15 +516,26 @@ const AppointmentContent = () => {
                           )}
                         </div>
 
-                        {(appointment.Status === 'Approved' || appointment.Status === 'Completed') && (
-                          <div className="mt-4 sm:mt-0 sm:ml-6 flex items-center justify-start sm:justify-end">
-                            <Button
-                              variant="outline"
-                              onClick={() => handleViewScheduleDetails(appointment)}
-                              className="text-sm px-4 py-2"
-                            >
-                              View Schedule details
-                            </Button>
+                        {(canReschedule(appointment) || appointment.Status === 'Approved' || appointment.Status === 'Completed') && (
+                          <div className="mt-4 sm:mt-0 sm:ml-6 flex items-center justify-start sm:justify-end gap-2">
+                            {canReschedule(appointment) && (
+                              <Button
+                                variant="outline"
+                                onClick={() => setRescheduleAppointment(appointment)}
+                                className="text-sm px-4 py-2"
+                              >
+                                Reschedule
+                              </Button>
+                            )}
+                            {(appointment.Status === 'Approved' || appointment.Status === 'Completed') && (
+                              <Button
+                                variant="outline"
+                                onClick={() => handleViewScheduleDetails(appointment)}
+                                className="text-sm px-4 py-2"
+                              >
+                                View Schedule details
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -475,6 +560,18 @@ const AppointmentContent = () => {
           </div>
         </div>
       </div>
+
+      {/* Reschedule Modal */}
+      {rescheduleAppointment && (
+        <RescheduleAppointmentModal
+          appointment={rescheduleAppointment}
+          onClose={() => setRescheduleAppointment(null)}
+          onSuccess={() => {
+            setRescheduleAppointment(null);
+            fetchAppointments();
+          }}
+        />
+      )}
 
       {/* Schedule Details Modal */}
       {showScheduleModal && (

@@ -13,6 +13,8 @@ import CertificateGenerator from "@/components/CertificateGenerator.jsx";
 import ConfirmDialog from "@/components/ConfirmDialog.jsx";
 import Alert from "@/components/Alert";
 import SubServiceScheduleModal from "@/components/SubServiceScheduleModal.jsx";
+import Input from "@/components/Input.jsx";
+import Label from "@/components/Label.jsx";
 
 // Warning Block Component
 const WarningBlock = ({ type, title, description, count, onShow, onClear, isActive }) => {
@@ -147,7 +149,22 @@ const AppointmentPage = () => {
   const [reportTime, setReportTime] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   
-
+  // Reschedule fee state (used for paid reschedules after the first one)
+  const [rescheduleFee, setRescheduleFee] = useState(null);
+  const [showRescheduleFeeModal, setShowRescheduleFeeModal] = useState(false);
+  const [rescheduleFeeForm, setRescheduleFeeForm] = useState({
+    fee_name: "Reschedule Fee",
+    fee_type: "percent",
+    fee_value: 0,
+    is_active: true,
+  });
+  const [rescheduleFeeLoading, setRescheduleFeeLoading] = useState(false);
+  const [rescheduleFeeAlert, setRescheduleFeeAlert] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
+  
   // Check if user is ChurchOwner or has appointment_list permission
   const hasAccess =
     user?.profile?.system_role?.role_name === "ChurchOwner" ||
@@ -170,7 +187,8 @@ const AppointmentPage = () => {
   const canMarkCompleted = hasPermission("appointment_markCompleted");
   const canGenerateCertificate = hasPermission("appointment_generateCertificate");
   const canGenerateMassReport = hasPermission("appointment_generateMassReport");
-
+  const canSetupRescheduleFee = hasPermission("appointment_setupRescheduleFee");
+  const canEditRescheduleFee = hasPermission("appointment_editRescheduleFee");
 
   // Fetch appointments
   const fetchAppointments = async () => {
@@ -194,9 +212,34 @@ const AppointmentPage = () => {
     }
   };
 
+  // Fetch reschedule fee configuration for this church
+  const fetchRescheduleFee = async () => {
+    try {
+      const sanitizedChurchName = churchname.replace(/:\d+$/, "");
+      const response = await axios.get(`/api/reschedule-fees/${sanitizedChurchName}`);
+
+      if (response.data?.success && response.data.reschedule_fee) {
+        const fee = response.data.reschedule_fee;
+        setRescheduleFee(fee);
+        setRescheduleFeeForm({
+          fee_name: fee.fee_name || "Reschedule Fee",
+          fee_type: fee.fee_type || "percent",
+          fee_value: fee.fee_value ?? 0,
+          is_active: fee.is_active ?? true,
+        });
+      } else {
+        setRescheduleFee(null);
+      }
+    } catch (err) {
+      console.error("Error fetching reschedule fee:", err);
+      setRescheduleFee(null);
+    }
+  };
+
   useEffect(() => {
     if (hasAccess && churchname) {
       fetchAppointments();
+      fetchRescheduleFee();
     }
   }, [hasAccess, churchname]);
 
@@ -405,6 +448,16 @@ const AppointmentPage = () => {
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return '₱0.00';
+    }
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+    }).format(Number(amount));
   };
 
   // Helper function to construct user display name
@@ -952,6 +1005,57 @@ const AppointmentPage = () => {
     }
   }, [showMassReportModal]);
 
+  // Reschedule fee modal handlers
+  const handleRescheduleFeeModalOpen = () => {
+    setShowRescheduleFeeModal(true);
+    setRescheduleFeeAlert({ show: false, type: "", message: "" });
+  };
+
+  const handleRescheduleFeeModalClose = () => {
+    setShowRescheduleFeeModal(false);
+    setRescheduleFeeAlert({ show: false, type: "", message: "" });
+  };
+
+  const handleRescheduleFeeSubmit = async (e) => {
+    e.preventDefault();
+    setRescheduleFeeLoading(true);
+    setRescheduleFeeAlert({ show: false, type: "", message: "" });
+
+    try {
+      const sanitizedChurchName = churchname.replace(/:\d+$/, "");
+      const response = await axios.post(`/api/reschedule-fees/${sanitizedChurchName}`, rescheduleFeeForm);
+
+      if (response.data?.success) {
+        const fee = response.data.reschedule_fee;
+        setRescheduleFee(fee);
+        setRescheduleFeeAlert({
+          show: true,
+          type: "success",
+          message: "Reschedule fee saved successfully!",
+        });
+
+        setTimeout(() => {
+          handleRescheduleFeeModalClose();
+        }, 1500);
+      } else {
+        setRescheduleFeeAlert({
+          show: true,
+          type: "error",
+          message: response.data?.message || "Failed to save reschedule fee.",
+        });
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Failed to save reschedule fee.";
+      setRescheduleFeeAlert({
+        show: true,
+        type: "error",
+        message: errorMessage,
+      });
+    } finally {
+      setRescheduleFeeLoading(false);
+    }
+  };
+
   if (!hasAccess) {
     return (
       <div className="lg:p-6 w-full h-screen pt-20">
@@ -1006,18 +1110,46 @@ const AppointmentPage = () => {
                         </p>
                       </div>
                       
-                      {/* Generate Report Button for Mass Services */}
-                      {isActiveMassService() && (
-                        <Button
-                          onClick={() => setShowMassReportModal(true)}
-                          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
-                          disabled={!canGenerateMassReport}
-                          title={!canGenerateMassReport ? 'You do not have permission to generate Mass reports' : ''}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Generate Report
-                        </Button>
-                      )}
+                      <div className="flex flex-col items-end space-y-2">
+                        {rescheduleFee && rescheduleFee.is_active && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 max-w-xs text-right">
+                            <div className="text-xs text-blue-700 font-medium">
+                              {rescheduleFee.fee_name || 'Reschedule Fee'}
+                            </div>
+                            <div className="text-sm font-semibold text-blue-900">
+                              {rescheduleFee.fee_type === 'percent'
+                                ? `${rescheduleFee.fee_value}% per paid reschedule`
+                                : `${formatCurrency(rescheduleFee.fee_value)} per paid reschedule`}
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          {isActiveMassService() && (
+                            <Button
+                              onClick={() => setShowMassReportModal(true)}
+                              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
+                              disabled={!canGenerateMassReport}
+                              title={!canGenerateMassReport ? 'You do not have permission to generate Mass reports' : ''}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Generate Report
+                            </Button>
+                          )}
+                          <Button
+                            onClick={handleRescheduleFeeModalOpen}
+                            variant="outline"
+                            className="inline-flex items-center px-3 py-2 text-xs sm:text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 border border-blue-300 hover:border-blue-400 rounded-md whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={rescheduleFee ? !canEditRescheduleFee : !canSetupRescheduleFee}
+                            title={
+                              rescheduleFee
+                                ? (!canEditRescheduleFee ? 'You do not have permission to edit reschedule fee' : '')
+                                : (!canSetupRescheduleFee ? 'You do not have permission to setup reschedule fee' : '')
+                            }
+                          >
+                            Reschedule Fee
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -2244,10 +2376,166 @@ const AppointmentPage = () => {
         </div>
       )}
 
+      {/* Reschedule Fee Modal */}
+      {showRescheduleFeeModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl mx-auto relative w-full max-w-md">
+            {/* Header */}
+            <div className="bg-gray-100 px-6 py-4 rounded-t-lg border-b">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {rescheduleFee ? 'Edit Reschedule Fee' : 'Setup Reschedule Fee'}
+                </h2>
+                <p className="text-gray-600 text-sm mt-1">
+                  Configure the fee used when members reschedule more than once.
+                </p>
+              </div>
+            </div>
+
+            {/* Content */}
+            <form onSubmit={handleRescheduleFeeSubmit} className="px-6 py-6 space-y-4">
+              {rescheduleFeeAlert.show && (
+                <div className="mb-4">
+                  <Alert
+                    type={rescheduleFeeAlert.type}
+                    title={rescheduleFeeAlert.type === 'error' ? 'Error' : 'Success'}
+                    message={rescheduleFeeAlert.message}
+                    onClose={() => setRescheduleFeeAlert({ show: false, type: '', message: '' })}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fee Name
+                  </Label>
+                  <Input
+                    type="text"
+                    value={rescheduleFeeForm.fee_name}
+                    onChange={(e) =>
+                      setRescheduleFeeForm({
+                        ...rescheduleFeeForm,
+                        fee_name: e.target.value,
+                      })
+                    }
+                    placeholder="Enter fee name"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fee Type
+                  </Label>
+                  <select
+                    value={rescheduleFeeForm.fee_type}
+                    onChange={(e) =>
+                      setRescheduleFeeForm({
+                        ...rescheduleFeeForm,
+                        fee_type: e.target.value,
+                      })
+                    }
+                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="percent">Percentage (%)</option>
+                    <option value="fixed">Fixed Amount (PHP)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fee Value
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max={rescheduleFeeForm.fee_type === 'percent' ? '100' : undefined}
+                    value={rescheduleFeeForm.fee_value}
+                    onChange={(e) =>
+                      setRescheduleFeeForm({
+                        ...rescheduleFeeForm,
+                        fee_value: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    placeholder={
+                      rescheduleFeeForm.fee_type === 'percent'
+                        ? 'Enter percentage (e.g., 2.5 for 2.5%)'
+                        : 'Enter amount (e.g., 100 for PHP100)'
+                    }
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    {rescheduleFeeForm.fee_type === 'percent'
+                      ? 'Enter the percentage fee (e.g., 2.5 for 2.5%)'
+                      : 'Enter the fixed fee amount in PHP (e.g., 100 for PHP100)'}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="reschedule_is_active"
+                      checked={rescheduleFeeForm.is_active}
+                      onChange={(e) =>
+                        setRescheduleFeeForm({
+                          ...rescheduleFeeForm,
+                          is_active: e.target.checked,
+                        })
+                      }
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <Label
+                      htmlFor="reschedule_is_active"
+                      className="ml-2 text-sm font-medium text-gray-700"
+                    >
+                      Active (charge on 2nd+ reschedules)
+                    </Label>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    First reschedule is always free. When active, this fee applies starting
+                    from the second reschedule for an appointment.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button
+                  type="button"
+                  onClick={handleRescheduleFeeModalClose}
+                  variant="outline"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={rescheduleFeeLoading}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {rescheduleFeeLoading ? (
+                    <>
+                      <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-white" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Fee'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
-
 const AppointmentPageWrapper = () => {
   return (
     <Suspense fallback={<DataLoading message="Loading appointments..." />}>

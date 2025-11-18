@@ -172,6 +172,10 @@ const ChurchRegistrationPage = () => {
       stepErrors.BarangayPermit = ["Barangay permit is required"];
     }
 
+    if (!formData.AuthorizationLetter) {
+      stepErrors.AuthorizationLetter = ["Authorization letter is required"];
+    }
+
     if (!formData.RepresentativeID) {
       stepErrors.RepresentativeID = ["Representative ID is required"];
     }
@@ -1043,7 +1047,8 @@ const ChurchRegistrationPage = () => {
                         name="AuthorizationLetter"
                         accept=".pdf,image/*"
                         maxSize={5120}
-                        helpText="PDF or image up to 5MB (optional)"
+                        required
+                        helpText="PDF or image up to 5MB"
                         onChange={handleFileChange}
                         errors={errors.AuthorizationLetter || []}
                       />
@@ -1191,19 +1196,19 @@ const ChurchRegistrationPage = () => {
               </p>
               <ol className="list-decimal list-inside space-y-2">
                 <li>
-                  <span className="font-medium">Church profile picture</span> – a clear image of the church building or official logo, used for identification within the platform.
+                  <span className="font-medium">SEC registration</span> – a valid copy of your Securities and Exchange Commission registration or equivalent legal document (PDF or image up to 5MB).
                 </li>
                 <li>
-                  <span className="font-medium">SEC registration</span> – a valid copy of your Securities and Exchange Commission registration or equivalent legal document.
+                  <span className="font-medium">BIR certificate</span> – proof of registration with the Bureau of Internal Revenue (PDF or image up to 5MB).
                 </li>
                 <li>
-                  <span className="font-medium">BIR certificate</span> – proof of registration with the Bureau of Internal Revenue.
+                  <span className="font-medium">Barangay permit</span> – an up-to-date barangay clearance or permit indicating that the church is authorized to operate in its location (PDF or image up to 5MB).
                 </li>
                 <li>
-                  <span className="font-medium">Barangay permit</span> – an up-to-date barangay clearance or permit indicating that the church is authorized to operate in its location.
+                  <span className="font-medium">Authorization letter</span> – a signed authorization letter from the parish priest, bishop, or other competent authority confirming that the representative is allowed to manage this church account (PDF or image up to 5MB).
                 </li>
                 <li>
-                  <span className="font-medium">Representative government ID</span> – a valid government-issued ID of the authorized representative submitting this application.
+                  <span className="font-medium">Representative government ID</span> – a valid government-issued ID of the authorized representative submitting this application (PDF or image up to 5MB).
                 </li>
               </ol>
               <p>

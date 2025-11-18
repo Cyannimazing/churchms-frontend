@@ -404,9 +404,20 @@ const TransactionRecordPage = () => {
   };
 
   const canRefund = (transaction) => {
-    return transaction.appointment && 
-           ['Cancelled', 'Rejected'].includes(transaction.appointment.Status) &&
-           transaction.refund_status !== 'refunded';
+    // Only allow refunds for main appointment payments, not reschedule-fee-only transactions
+    const rawType = transaction?.transaction_type ||
+      transaction?.metadata?.type ||
+      transaction?.transaction?.transaction_type ||
+      null;
+
+    const isMainPayment = !rawType || rawType === 'appointment_payment';
+
+    return (
+      isMainPayment &&
+      transaction.appointment &&
+      ['Cancelled', 'Rejected'].includes(transaction.appointment.Status) &&
+      transaction.refund_status !== 'refunded'
+    );
   };
 
   const getReceiptCode = (transaction) => {
@@ -446,6 +457,161 @@ const TransactionRecordPage = () => {
       transaction?.appointment?.service?.ServiceName ||
       null
     );
+  };
+
+  // Derive a human-friendly transaction type label from transaction_type / metadata
+  const getTransactionTypeLabel = (transaction) => {
+    const rawType = transaction?.transaction_type ||
+      transaction?.metadata?.type ||
+      transaction?.transaction?.transaction_type ||
+      null;
+
+    if (!rawType) return 'Payment';
+
+    switch (rawType) {
+      case 'appointment_payment':
+        return 'Appointment Payment';
+      case 'appointment_reschedule_fee':
+        return 'Appointment Reschedule Fee';
+      default:
+        // Convert snake_case to Title Case as a sensible fallback
+        return rawType
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+    }
+  };
+
+  // Helper to prettify metadata keys
+  const humanizeMetaKey = (key) => {
+    return key
+      .split('_')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  };
+
+  // Helper to format metadata values for display
+  const formatMetaValue = (value) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) return value.join(', ');
+    // Objects or anything else – short JSON string
+    try {
+      return JSON.stringify(value);
+    } catch (_) {
+      return String(value);
+    }
+  };
+
+  // Build a normalized, nicely formatted metadata summary for display
+  const getMetadataSummaryRows = (transaction) => {
+    const meta = transaction?.metadata || transaction?.transaction?.metadata || {};
+    const rows = [];
+
+    // Track which metadata keys we render explicitly so we can add the rest
+    const handledKeys = new Set();
+
+    // Always show a high-level type
+    rows.push({
+      label: 'Payment Type',
+      value: getTransactionTypeLabel(transaction),
+    });
+    handledKeys.add('type');
+
+    if (meta.church_name) {
+      rows.push({ label: 'Church', value: meta.church_name });
+      handledKeys.add('church_name');
+    }
+
+    if (meta.service_name) {
+      rows.push({ label: 'Service (Snapshot)', value: meta.service_name });
+      handledKeys.add('service_name');
+    }
+
+    if (meta.receipt_code) {
+      rows.push({ label: 'Reference Code', value: meta.receipt_code });
+      handledKeys.add('receipt_code');
+    }
+
+    // Appointment dates: support both original and rescheduled
+    // For reschedules we have old_appointment_date and new_appointment_date in metadata.
+    if (meta.old_appointment_date) {
+      rows.push({
+        label: 'Old Appointment Date',
+        value: new Date(meta.old_appointment_date).toLocaleString('en-PH', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      });
+      handledKeys.add('old_appointment_date');
+    } else if (meta.appointment_date) {
+      // Fallback for non-reschedule flows that only have appointment_date
+      rows.push({
+        label: 'Appointment Date',
+        value: new Date(meta.appointment_date).toLocaleString('en-PH', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      });
+      handledKeys.add('appointment_date');
+    }
+
+    if (meta.new_appointment_date) {
+      rows.push({
+        label: 'New Appointment Date',
+        value: new Date(meta.new_appointment_date).toLocaleString('en-PH', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      });
+      handledKeys.add('new_appointment_date');
+    }
+
+    if (meta.schedule_time) {
+      rows.push({ label: 'Schedule Time', value: meta.schedule_time });
+      handledKeys.add('schedule_time');
+    }
+
+    if (meta.reschedule_count !== undefined) {
+      rows.push({ label: 'Reschedule Count', value: meta.reschedule_count });
+      handledKeys.add('reschedule_count');
+    }
+
+    if (meta.payment_status) {
+      rows.push({ label: 'Payment Status (Meta)', value: meta.payment_status });
+      handledKeys.add('payment_status');
+    }
+
+    // If there is form data, just show that it exists (details are elsewhere)
+    if (Object.prototype.hasOwnProperty.call(meta, 'form_data')) {
+      const hasFormData = !!meta.form_data && meta.form_data !== 'null';
+      rows.push({ label: 'Has Form Data', value: hasFormData ? 'Yes' : 'No' });
+      handledKeys.add('form_data');
+    }
+
+    // Add any remaining metadata keys in a generic but readable way
+    Object.entries(meta).forEach(([key, value]) => {
+      if (handledKeys.has(key)) return;
+      const formatted = formatMetaValue(value);
+      if (formatted === '') return;
+      rows.push({
+        label: humanizeMetaKey(key),
+        value: formatted,
+      });
+    });
+
+    return rows;
   };
 
   // Convenience fee handlers
@@ -1077,16 +1243,26 @@ const TransactionRecordPage = () => {
               </div>
               
               {/* Metadata */}
-              {selectedTransaction.metadata && Object.keys(selectedTransaction.metadata).length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Metadata</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <pre className="text-xs text-gray-700 overflow-x-auto">
-                      {JSON.stringify(selectedTransaction.metadata, null, 2)}
-                    </pre>
+              {(() => {
+                const rows = getMetadataSummaryRows(selectedTransaction);
+                if (rows.length === 0) return null;
+
+                return (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Metadata</h3>
+                    <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {rows.map((row) => (
+                        <div key={row.label} className="flex flex-col">
+                          <span className="text-xs font-medium text-gray-500">{row.label}</span>
+                          <span className="text-sm text-gray-900 mt-0.5 break-words">
+                            {row.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Refund Information */}
               {selectedTransaction.refund_status === 'refunded' && (

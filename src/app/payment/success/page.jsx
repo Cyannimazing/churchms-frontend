@@ -18,7 +18,7 @@ const PaymentSuccessContent = () => {
     const fetchTransactionDetails = async () => {
       const transactionId = searchParams.get('transaction_id');
       const sessionId = searchParams.get('session_id');
-      const type = searchParams.get('type') || 'subscription'; // 'subscription' or 'appointment'
+      const type = searchParams.get('type') || 'subscription'; // 'subscription', 'appointment', or 'appointment_reschedule'
       const errorParam = searchParams.get('error');
 
       if (errorParam) {
@@ -27,23 +27,33 @@ const PaymentSuccessContent = () => {
         return;
       }
 
-      if (!transactionId) {
-        setError('Transaction information not found.');
-        setIsLoading(false);
-        return;
-      }
-
       try {
         let apiUrl;
-        
-        if (type === 'appointment') {
+        let response;
+
+        // For both appointment payments and reschedule fees we behave the same
+        // way as other payments: backend redirects with transaction_id and we
+        // fetch details by that ID.
+        if (type === 'appointment' || type === 'appointment_reschedule') {
+          if (!transactionId) {
+            setError('Transaction information not found.');
+            setIsLoading(false);
+            return;
+          }
+
           apiUrl = `/api/appointment-transactions/${transactionId}`;
+          response = await axios.get(apiUrl);
         } else {
+          if (!transactionId) {
+            setError('Transaction information not found.');
+            setIsLoading(false);
+            return;
+          }
+
           const params = sessionId ? `?session_id=${sessionId}` : '';
           apiUrl = `/api/transactions/${transactionId}${params}`;
+          response = await axios.get(apiUrl);
         }
-        
-        const response = await axios.get(apiUrl);
         
         if (response.data.success) {
           setTransactionData({ ...response.data.data, type });
@@ -142,7 +152,9 @@ const PaymentSuccessContent = () => {
             <p className="text-green-50 text-sm mt-1">
               {transactionData?.type === 'appointment'
                 ? 'Your appointment payment has been processed successfully.'
-                : 'Your subscription payment has been processed successfully.'}
+                : transactionData?.type === 'appointment_reschedule'
+                  ? 'Your appointment has been rescheduled successfully.'
+                  : 'Your subscription payment has been processed successfully.'}
             </p>
           </div>
 
@@ -165,7 +177,7 @@ const PaymentSuccessContent = () => {
                 )}
 
                 {/* Action Button */}
-                {transactionData?.type === 'appointment' ? (
+                {transactionData?.type === 'appointment' || transactionData?.type === 'appointment_reschedule' ? (
                   <Link href="/appointment" className="block">
                     <Button className="w-full">
                       View My Appointments
