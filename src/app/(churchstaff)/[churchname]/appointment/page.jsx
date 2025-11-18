@@ -10,7 +10,6 @@ import SearchAndPagination from "@/components/SearchAndPagination";
 import { Button } from "@/components/Button.jsx";
 import FormRenderer from "@/components/FormRenderer.jsx";
 import CertificateGenerator from "@/components/CertificateGenerator.jsx";
-import CertificateTypeModal from "@/components/CertificateTypeModal.jsx";
 import ConfirmDialog from "@/components/ConfirmDialog.jsx";
 import Alert from "@/components/Alert";
 import SubServiceScheduleModal from "@/components/SubServiceScheduleModal.jsx";
@@ -119,9 +118,9 @@ const AppointmentPage = () => {
   });
   
   // Certificate generation state
-  const [showCertificateTypeModal, setShowCertificateTypeModal] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
-  const [selectedCertificateType, setSelectedCertificateType] = useState('marriage');
+  const [selectedCertificateType, setSelectedCertificateType] = useState(null);
+  const [certificateError, setCertificateError] = useState("");
   
   // Alert state
   const [alertMessage, setAlertMessage] = useState("");
@@ -782,14 +781,30 @@ const AppointmentPage = () => {
   };
 
   // Certificate generation functions
-  const handleGenerateCertificate = () => {
-      setShowCertificateTypeModal(true);
-  };
+  const handleGenerateCertificate = async () => {
+    if (!selectedAppointment?.AppointmentID) {
+      setCertificateError('No appointment selected for certificate generation.');
+      return;
+    }
 
-  const handleCertificateTypeSelection = (type) => {
-    setSelectedCertificateType(type);
-      setShowCertificateTypeModal(false);
+    setCertificateError("");
+
+    try {
+      const response = await axios.get(`/api/appointments/${selectedAppointment.AppointmentID}/certificate-type`);
+      const resolvedType = response.data?.certificate_type || response.data?.config?.CertificateType;
+
+      if (!resolvedType) {
+        setCertificateError('No enabled certificate configuration found for this service. Please configure it in Certificate Configuration first.');
+        return;
+      }
+
+      setSelectedCertificateType(resolvedType);
       setShowCertificateModal(true);
+    } catch (err) {
+      console.error('Error resolving certificate type for appointment:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to resolve certificate type for this appointment.';
+      setCertificateError(errorMessage);
+    }
   };
 
 
@@ -1743,15 +1758,22 @@ const AppointmentPage = () => {
                   {selectedAppointment?.Status === 'Completed' && 
                    (appointmentDetails?.service?.isCertificateGeneration || 
                     appointmentDetails?.sacramentService?.isCertificateGeneration) && (
-                    <Button
-                      onClick={handleGenerateCertificate}
-                      className="flex items-center bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={isUpdatingStatus || !canGenerateCertificate}
-                      title={!canGenerateCertificate ? 'You do not have permission to generate certificates' : ''}
-                    >
-                      <CertificateIcon className="h-4 w-4 mr-2" />
-                      Generate Certificate
-                    </Button>
+                    <div className="flex flex-col items-end space-y-1">
+                      <Button
+                        onClick={handleGenerateCertificate}
+                        className="flex items-center bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isUpdatingStatus || !canGenerateCertificate}
+                        title={!canGenerateCertificate ? 'You do not have permission to generate certificates' : ''}
+                      >
+                        <CertificateIcon className="h-4 w-4 mr-2" />
+                        Generate Certificate
+                      </Button>
+                      {certificateError && (
+                        <p className="text-xs text-red-600 max-w-sm text-right">
+                          {certificateError}
+                        </p>
+                      )}
+                    </div>
                   )}
                   
                 </div>
@@ -1937,13 +1959,6 @@ const AppointmentPage = () => {
         cancelText="Cancel"
         type={confirmAction?.status === 'Cancelled' ? 'warning' : confirmAction?.status === 'Completed' ? 'info' : 'info'}
         isLoading={isUpdatingStatus}
-      />
-
-      {/* Certificate Type Selection Modal */}
-      <CertificateTypeModal
-        isOpen={showCertificateTypeModal}
-        onClose={() => setShowCertificateTypeModal(false)}
-        onSelectType={handleCertificateTypeSelection}
       />
 
       {/* Certificate Generator Modal */}

@@ -6,6 +6,7 @@ import { Settings, FileText, Save, RotateCcw, ChevronRight } from "lucide-react"
 import { Button } from "@/components/Button.jsx";
 import Alert from "@/components/Alert";
 import axios from "@/lib/axios";
+import ConfirmDialog from "@/components/ConfirmDialog.jsx";
 import { useAuth } from "@/hooks/auth.jsx";
 
 const CertificateConfig = () => {
@@ -31,6 +32,9 @@ const CertificateConfig = () => {
   const [isLoadingServices, setIsLoadingServices] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [isLoadingFields, setIsLoadingFields] = useState(false);
+  const [usedServiceIds, setUsedServiceIds] = useState([]);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   // State for each certificate type
   const [baptismConfig, setBaptismConfig] = useState({
@@ -158,8 +162,11 @@ const CertificateConfig = () => {
       
       try {
         const response = await axios.get(`/api/certificate-config/${churchname}/${selectedCertificate}`);
-        if (response.data.config) {
-          const config = response.data.config;
+        const { config, used_service_ids } = response.data || {};
+
+        setUsedServiceIds(Array.isArray(used_service_ids) ? used_service_ids : []);
+
+        if (config) {
           setSelectedServiceId(config.ServiceID || "");
           
           const selected = certificates.find(cert => cert.id === selectedCertificate);
@@ -207,9 +214,12 @@ const CertificateConfig = () => {
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    if (!selectedCertificate) return;
+
     const selected = certificates.find(cert => cert.id === selectedCertificate);
     if (selected) {
+      setIsResetting(true);
       const defaults = {
         baptism: {
           templateName: "Baptism Certificate Template",
@@ -270,9 +280,27 @@ const CertificateConfig = () => {
         },
       };
       
+      // Reset local config and clear selected service
       selected.setConfig(defaults[selectedCertificate]);
-      setAlertMessage("Configuration reset to defaults!");
-      setAlertType("info");
+      const previousServiceId = selectedServiceId;
+      setSelectedServiceId("");
+
+      if (previousServiceId) {
+        setUsedServiceIds(prev => prev.filter(id => String(id) !== String(previousServiceId)));
+      }
+
+      try {
+        await axios.delete(`/api/certificate-config/${churchname}/${selectedCertificate}`);
+        setAlertMessage("Configuration reset to defaults and removed from mapping.");
+        setAlertType("info");
+      } catch (error) {
+        console.error('Failed to delete certificate configuration:', error);
+        setAlertMessage("Local configuration reset, but failed to remove saved configuration. Please try again.");
+        setAlertType("error");
+      } finally {
+        setIsResetting(false);
+        setShowResetConfirm(false);
+      }
     }
   };
 
@@ -387,11 +415,17 @@ const CertificateConfig = () => {
                               disabled={!selectedCert?.config.enabled || isLoadingServices}
                             >
                               <option value="">Select a sacrament service</option>
-                              {Array.isArray(sacramentServices) && sacramentServices.map((service) => (
-                                <option key={service.ServiceID} value={service.ServiceID}>
-                                  {service.ServiceName}
-                                </option>
-                              ))}
+                              {Array.isArray(sacramentServices) && sacramentServices
+                                .filter((service) => {
+                                  const isUsed = usedServiceIds.includes(service.ServiceID);
+                                  const isCurrent = String(service.ServiceID) === String(selectedServiceId);
+                                  return !isUsed || isCurrent;
+                                })
+                                .map((service) => (
+                                  <option key={service.ServiceID} value={service.ServiceID}>
+                                    {service.ServiceName}
+                                  </option>
+                                ))}
                             </select>
                             {isLoadingServices && (
                               <p className="text-xs text-gray-500 mt-2">Loading services...</p>
@@ -456,11 +490,17 @@ const CertificateConfig = () => {
                               disabled={!selectedCert?.config.enabled || isLoadingServices}
                             >
                               <option value="">Select a sacrament service</option>
-                              {Array.isArray(sacramentServices) && sacramentServices.map((service) => (
-                                <option key={service.ServiceID} value={service.ServiceID}>
-                                  {service.ServiceName}
-                                </option>
-                              ))}
+                              {Array.isArray(sacramentServices) && sacramentServices
+                                .filter((service) => {
+                                  const isUsed = usedServiceIds.includes(service.ServiceID);
+                                  const isCurrent = String(service.ServiceID) === String(selectedServiceId);
+                                  return !isUsed || isCurrent;
+                                })
+                                .map((service) => (
+                                  <option key={service.ServiceID} value={service.ServiceID}>
+                                    {service.ServiceName}
+                                  </option>
+                                ))}
                             </select>
                             {isLoadingServices && (
                               <p className="text-xs text-gray-500 mt-2">Loading services...</p>
@@ -525,11 +565,17 @@ const CertificateConfig = () => {
                               disabled={!selectedCert?.config.enabled || isLoadingServices}
                             >
                               <option value="">Select a sacrament service</option>
-                              {Array.isArray(sacramentServices) && sacramentServices.map((service) => (
-                                <option key={service.ServiceID} value={service.ServiceID}>
-                                  {service.ServiceName}
-                                </option>
-                              ))}
+                              {Array.isArray(sacramentServices) && sacramentServices
+                                .filter((service) => {
+                                  const isUsed = usedServiceIds.includes(service.ServiceID);
+                                  const isCurrent = String(service.ServiceID) === String(selectedServiceId);
+                                  return !isUsed || isCurrent;
+                                })
+                                .map((service) => (
+                                  <option key={service.ServiceID} value={service.ServiceID}>
+                                    {service.ServiceName}
+                                  </option>
+                                ))}
                             </select>
                             {isLoadingServices && (
                               <p className="text-xs text-gray-500 mt-2">Loading services...</p>
@@ -594,11 +640,17 @@ const CertificateConfig = () => {
                               disabled={!selectedCert?.config.enabled || isLoadingServices}
                             >
                               <option value="">Select a sacrament service</option>
-                              {Array.isArray(sacramentServices) && sacramentServices.map((service) => (
-                                <option key={service.ServiceID} value={service.ServiceID}>
-                                  {service.ServiceName}
-                                </option>
-                              ))}
+                              {Array.isArray(sacramentServices) && sacramentServices
+                                .filter((service) => {
+                                  const isUsed = usedServiceIds.includes(service.ServiceID);
+                                  const isCurrent = String(service.ServiceID) === String(selectedServiceId);
+                                  return !isUsed || isCurrent;
+                                })
+                                .map((service) => (
+                                  <option key={service.ServiceID} value={service.ServiceID}>
+                                    {service.ServiceName}
+                                  </option>
+                                ))}
                             </select>
                             {isLoadingServices && (
                               <p className="text-xs text-gray-500 mt-2">Loading services...</p>
@@ -699,10 +751,10 @@ const CertificateConfig = () => {
 
                 <div className="flex justify-end space-x-3">
                   <Button
-                    onClick={handleReset}
+                    onClick={() => setShowResetConfirm(true)}
                     variant="outline"
                     className="flex items-center"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isResetting}
                   >
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Reset to Defaults
@@ -710,7 +762,7 @@ const CertificateConfig = () => {
                   <Button
                     onClick={handleSave}
                     className="flex items-center"
-                    disabled={isSubmitting || !canFieldMapping}
+                    disabled={isSubmitting || isResetting || !canFieldMapping}
                     title={!canFieldMapping ? 'You do not have permission to save field mappings' : ''}
                   >
                     <Save className="mr-2 h-4 w-4" />
@@ -722,6 +774,21 @@ const CertificateConfig = () => {
           </div>
         </div>
       </div>
+
+      {/* Reset confirmation dialog */}
+      <ConfirmDialog
+        isOpen={showResetConfirm}
+        onClose={() => {
+          if (!isResetting) setShowResetConfirm(false);
+        }}
+        onConfirm={handleReset}
+        title="Reset Certificate Configuration"
+        message="This will reset this certificate template to defaults and remove its sacrament service mapping. Do you want to continue?"
+        confirmText="Yes, Reset"
+        cancelText="Cancel"
+        type="warning"
+        isLoading={isResetting}
+      />
     </div>
   );
 };

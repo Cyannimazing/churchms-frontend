@@ -34,6 +34,8 @@ const ChurchRegistrationPage = () => {
   const router = useRouter();
   const [provinces, setProvinces] = useState([]);
   const [cities, setCities] = useState([]);
+  const [acceptDocumentTerms, setAcceptDocumentTerms] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -303,11 +305,24 @@ const ChurchRegistrationPage = () => {
     window.scrollTo(0, 0);
   };
 
-  // Submit form
+// Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateStep3()) {
+    const isStep3Valid = validateStep3();
+    let hasError = !isStep3Valid;
+
+    if (!acceptDocumentTerms) {
+      hasError = true;
+      setErrors((prev) => ({
+        ...prev,
+        documentTerms: [
+          "You must confirm that you understand the document requirements before submitting.",
+        ],
+      }));
+    }
+
+    if (hasError) {
       return;
     }
 
@@ -1044,6 +1059,57 @@ const ChurchRegistrationPage = () => {
                         onChange={handleFileChange}
                         errors={errors.RepresentativeID || []}
                       />
+
+                      <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start">
+                          <AlertCircle className="h-5 w-5 text-gray-500 mt-0.5" />
+                          <div className="ml-3 text-sm text-gray-700">
+                            <h3 className="font-semibold text-gray-900">
+                              Document submission policy
+                            </h3>
+                            <p className="mt-1">
+                              Before submitting your application, please review and accept the document requirements and terms.
+                            </p>
+                            <div className="mt-3 flex flex-wrap items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsTermsModalOpen(true)}
+                              >
+                                View document terms
+                              </Button>
+                              <label className="flex items-start text-xs text-gray-700 select-none">
+                                <input
+                                  id="documentTerms"
+                                  type="checkbox"
+                                  className="mt-0.5 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  checked={acceptDocumentTerms}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setAcceptDocumentTerms(checked);
+                                    if (checked && errors.documentTerms) {
+                                      setErrors((prev) => {
+                                        const newErrors = { ...prev };
+                                        delete newErrors.documentTerms;
+                                        return newErrors;
+                                      });
+                                    }
+                                  }}
+                                />
+                                <span className="ml-2">
+                                  I confirm that I have reviewed the document requirements and understand that incomplete submissions may be declined.
+                                </span>
+                              </label>
+                            </div>
+                            {errors.documentTerms && (
+                              <p className="mt-2 text-xs text-red-600">
+                                {errors.documentTerms[0]}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="mt-8 flex justify-between">
@@ -1059,7 +1125,7 @@ const ChurchRegistrationPage = () => {
                       <Button
                         type="submit"
                         variant="primary"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !acceptDocumentTerms}
                         className="flex items-center"
                       >
                         {isSubmitting ? (
@@ -1101,6 +1167,82 @@ const ChurchRegistrationPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Terms & Conditions Modal */}
+      {isTermsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Document Requirements & Terms
+              </h3>
+              <button
+                type="button"
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                onClick={() => setIsTermsModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-6 py-4 overflow-y-auto text-sm text-gray-700 space-y-4">
+              <p>
+                To ensure proper verification and compliance with platform policies, all church registrations must include the following documents:
+              </p>
+              <ol className="list-decimal list-inside space-y-2">
+                <li>
+                  <span className="font-medium">Church profile picture</span> – a clear image of the church building or official logo, used for identification within the platform.
+                </li>
+                <li>
+                  <span className="font-medium">SEC registration</span> – a valid copy of your Securities and Exchange Commission registration or equivalent legal document.
+                </li>
+                <li>
+                  <span className="font-medium">BIR certificate</span> – proof of registration with the Bureau of Internal Revenue.
+                </li>
+                <li>
+                  <span className="font-medium">Barangay permit</span> – an up-to-date barangay clearance or permit indicating that the church is authorized to operate in its location.
+                </li>
+                <li>
+                  <span className="font-medium">Representative government ID</span> – a valid government-issued ID of the authorized representative submitting this application.
+                </li>
+              </ol>
+              <p>
+                By proceeding with the registration, you acknowledge that all submitted documents are accurate, authentic, and up to date. Our admin team reserves the right to reject or place on hold any application with incomplete, unclear, or invalid documentation.
+              </p>
+              <p>
+                If your application is rejected due to missing or invalid documents, you may reapply once the required documents have been completed and properly updated.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between border-t px-6 py-4 bg-gray-50">
+              <button
+                type="button"
+                className="text-sm text-gray-600 hover:text-gray-800"
+                onClick={() => setIsTermsModalOpen(false)}
+              >
+                Close
+              </button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  setAcceptDocumentTerms(true);
+                  if (errors.documentTerms) {
+                    setErrors((prev) => {
+                      const newErrors = { ...prev };
+                      delete newErrors.documentTerms;
+                      return newErrors;
+                    });
+                  }
+                  setIsTermsModalOpen(false);
+                }}
+              >
+                I have read and agree
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CSS for animations */}
       <style jsx global>{`
