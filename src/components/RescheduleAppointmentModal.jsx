@@ -93,6 +93,14 @@ const RescheduleAppointmentModal = ({ appointment, onClose, onSuccess }) => {
         const schedResp = await axios.get(`/api/sacrament-services/${serviceId}/schedules-public`);
         const schedData = schedResp.data || {};
         setSchedules(schedData.schedules || []);
+
+        // Merge in any public service metadata (including advance booking rules)
+        if (schedData.service) {
+          setService((prev) => ({
+            ...(prev || {}),
+            ...schedData.service,
+          }));
+        }
       } catch (err) {
         console.error("Error loading reschedule data", err);
         const message =
@@ -134,6 +142,32 @@ const RescheduleAppointmentModal = ({ appointment, onClose, onSuccess }) => {
     setSelectedDate(null);
     setSelectedSchedule(null);
     setSelectedScheduleTime(null);
+  };
+
+  // Minimum advance notice based on service settings (e.g. 3 weeks)
+  const getMinimumBookingDate = () => {
+    if (!service || !service.advanceBookingNumber || !service.advanceBookingUnit) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today; // no extra restriction
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const advanceNumber = parseInt(service.advanceBookingNumber, 10);
+    const advanceUnit = service.advanceBookingUnit;
+
+    if (Number.isNaN(advanceNumber) || advanceNumber <= 0) {
+      return today;
+    }
+
+    if (advanceUnit === "weeks") {
+      today.setDate(today.getDate() + advanceNumber * 7);
+    } else if (advanceUnit === "months") {
+      today.setMonth(today.getMonth() + advanceNumber);
+    }
+
+    return today;
   };
 
   // --- Schedules + slots helpers (mirrors SacramentApplicationModal) ---
@@ -430,6 +464,11 @@ const RescheduleAppointmentModal = ({ appointment, onClose, onSuccess }) => {
               <AlertTriangle className="w-3.5 h-3.5" />
               You can only reschedule up to 3 days before the appointment date.
             </p>
+            {service?.advanceBookingNumber && service?.advanceBookingUnit && (
+              <p className="mt-1 text-xs text-blue-700">
+                Minimum advance notice: {service.advanceBookingNumber} {service.advanceBookingUnit} before the new appointment date.
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -525,8 +564,11 @@ const RescheduleAppointmentModal = ({ appointment, onClose, onSuccess }) => {
                         today.setHours(0, 0, 0, 0);
                         date.setHours(0, 0, 0, 0);
 
+                        const minBookingDate = getMinimumBookingDate();
+
                         const isToday = isSameDay(date, today);
                         const isPast = date < today && !isToday;
+                        const violatesAdvanceNotice = date < minBookingDate;
                         const hasSchedules = hasSchedulesOnDate(date);
                         const isSelected =
                           selectedDate && isSameDay(date, selectedDate);
@@ -535,7 +577,7 @@ const RescheduleAppointmentModal = ({ appointment, onClose, onSuccess }) => {
                           originalAppointmentDate &&
                           isSameDay(date, originalAppointmentDate);
 
-                        const isDisabledBase = isPast || !hasSchedules;
+                        const isDisabledBase = isPast || !hasSchedules || violatesAdvanceNotice;
                         const isDisabled = isDisabledBase || isSameAsOriginal;
 
                         return (
@@ -562,7 +604,11 @@ const RescheduleAppointmentModal = ({ appointment, onClose, onSuccess }) => {
                                   ? "Available - click to view times"
                                   : isPast
                                     ? "Past date"
-                                    : "No schedules available"
+                                    : violatesAdvanceNotice
+                                      ? service && service.advanceBookingNumber && service.advanceBookingUnit
+                                        ? `Requires at least ${service.advanceBookingNumber} ${service.advanceBookingUnit} advance notice`
+                                        : "Date is not available for booking"
+                                      : "No schedules available"
                             }
                           >
                             <span className="relative z-10">{day}</span>
